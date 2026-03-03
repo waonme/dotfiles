@@ -1,0 +1,40 @@
+{
+    "apps": [
+        {
+            "Version": "26.00",
+            "Source": "main",
+            "Updated": "2026-03-03T10:43:21.6479218+09:00",
+            "Info": "",
+            "Name": "7zip"
+        },
+        {
+            "Version": "8.0.1",
+            "Source": "main",
+            "Updated": "2026-03-03T10:43:32.8119728+09:00",
+            "Info": "",
+            "Name": "ffmpeg"
+        },
+        {
+            "Version": "1.6.0",
+            "Source": "main",
+            "Updated": "2026-03-03T10:43:33.675047+09:00",
+            "Info": "",
+            "Name": "libwebp"
+        },
+        {
+            "Version": "2.18.0",
+            "Source": "main",
+            "Updated": "2026-03-03T10:43:35.7170529+09:00",
+            "Info": "",
+            "Name": "pngquant"
+        }
+    ],
+    "buckets": [
+        {
+            "Name": "main",
+            "Source": "https://github.com/ScoopInstaller/Main.git",
+            "Updated": "2026-03-03T09:53:15+09:00",
+            "Manifests": 1449
+        }
+    ]
+}
