@@ -1,40 +1,60 @@
 {
-    "apps": [
-        {
-            "Version": "26.00",
-            "Source": "main",
-            "Updated": "2026-03-03T10:43:21.6479218+09:00",
-            "Info": "",
-            "Name": "7zip"
-        },
-        {
-            "Version": "8.0.1",
-            "Source": "main",
-            "Updated": "2026-03-03T10:43:32.8119728+09:00",
-            "Info": "",
-            "Name": "ffmpeg"
-        },
-        {
-            "Version": "1.6.0",
-            "Source": "main",
-            "Updated": "2026-03-03T10:43:33.675047+09:00",
-            "Info": "",
-            "Name": "libwebp"
-        },
-        {
-            "Version": "2.18.0",
-            "Source": "main",
-            "Updated": "2026-03-03T10:43:35.7170529+09:00",
-            "Info": "",
-            "Name": "pngquant"
-        }
-    ],
     "buckets": [
         {
             "Name": "main",
             "Source": "https://github.com/ScoopInstaller/Main.git",
-            "Updated": "2026-03-03T09:53:15+09:00",
+            "Updated": "2026-03-03T13:56:09+09:00",
             "Manifests": 1449
+        },
+        {
+            "Name": "nerd-fonts",
+            "Source": "https://github.com/matthewjberger/scoop-nerd-fonts",
+            "Updated": "2026-02-27T23:43:56+09:00",
+            "Manifests": 367
+        }
+    ],
+    "apps": [
+        {
+            "Info": "",
+            "Version": "26.00",
+            "Updated": "2026-03-03T16:21:40.3586683+09:00",
+            "Name": "7zip",
+            "Source": "main"
+        },
+        {
+            "Info": "",
+            "Version": "8.0.1",
+            "Updated": "2026-03-03T10:43:32.8119728+09:00",
+            "Name": "ffmpeg",
+            "Source": "main"
+        },
+        {
+            "Info": "",
+            "Version": "3.4.0",
+            "Updated": "2026-03-03T16:20:13.210462+09:00",
+            "Name": "Hack-NF-Mono",
+            "Source": "nerd-fonts"
+        },
+        {
+            "Info": "",
+            "Version": "1.6.0",
+            "Updated": "2026-03-03T10:43:33.675047+09:00",
+            "Name": "libwebp",
+            "Source": "main"
+        },
+        {
+            "Info": "",
+            "Version": "6.0.1638.0",
+            "Updated": "2026-03-03T16:21:41.38482+09:00",
+            "Name": "nanazip",
+            "Source": "main"
+        },
+        {
+            "Info": "",
+            "Version": "2.18.0",
+            "Updated": "2026-03-03T10:43:35.7170529+09:00",
+            "Name": "pngquant",
+            "Source": "main"
         }
     ]
 }
