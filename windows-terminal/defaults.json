@@ -1,0 +1,61 @@
+{
+    "$schema": "https://aka.ms/terminal-profiles-schema",
+    "copyFormatting": "none",
+    "copyOnSelect": false,
+    "actions": [
+        {
+            "command": {
+                "action": "copy",
+                "singleLine": false
+            },
+            "id": "User.copy.644BA8F2"
+        },
+        {
+            "command": "paste",
+            "id": "User.paste"
+        },
+        {
+            "command": {
+                "action": "splitPane",
+                "split": "auto",
+                "splitMode": "duplicate"
+            },
+            "id": "User.splitPane.A6751878"
+        },
+        {
+            "command": "find",
+            "id": "User.find"
+        }
+    ],
+    "keybindings": [
+        {
+            "id": "User.copy.644BA8F2",
+            "keys": "ctrl+c"
+        },
+        {
+            "id": "User.find",
+            "keys": "ctrl+shift+f"
+        },
+        {
+            "id": "User.paste",
+            "keys": "ctrl+v"
+        },
+        {
+            "id": "User.splitPane.A6751878",
+            "keys": "alt+shift+d"
+        }
+    ],
+    "profiles": {
+        "defaults": {
+            "colorScheme": "Slate Mist",
+            "cursorShape": "bar",
+            "font": {
+                "face": "Hack Nerd Font Mono",
+                "size": 11
+            },
+            "opacity": 80,
+            "padding": "8, 8, 8, 8",
+            "useAcrylic": true
+        }
+    }
+}
