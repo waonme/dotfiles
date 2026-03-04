@@ -47,7 +47,8 @@ pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 2. 全レジストリ設定のインポート
 3. PowerShell プロファイルの反映
 4. Git の include.path 設定 + `autocrlf = true`
-5. `.wslconfig` のコピー
+5. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI)
+6. `.wslconfig` のコピー
 
 ## クイックスタート (Linux/WSL)
 
