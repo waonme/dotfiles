@@ -220,21 +220,21 @@ if (Test-Path $gitConfig) {
 Write-Host ""
 Write-Host "Installing winget apps..." -ForegroundColor Yellow
 $wingetApps = @(
-    "Dropbox.Dropbox"
-    "RustDesk.RustDesk"
-    "ogdesign.Eagle"
-    "Notion.Notion"
-    "Anthropic.Claude"
-    "Anthropic.ClaudeCode"
-    "OpenAI.Codex"
+    @{ Id = "9NK4T08DHQ80";    Source = "msstore"; Name = "Dropbox" }
+    @{ Id = "XPDBVSS44R0L9H";  Source = "msstore"; Name = "Notion" }
+    @{ Id = "RustDesk.RustDesk"; Source = "winget"; Name = "RustDesk" }
+    @{ Id = "ogdesign.Eagle";   Source = "winget"; Name = "Eagle" }
+    @{ Id = "Anthropic.Claude"; Source = "winget"; Name = "Claude" }
+    @{ Id = "Anthropic.ClaudeCode"; Source = "winget"; Name = "Claude Code" }
+    @{ Id = "OpenAI.Codex";     Source = "winget"; Name = "Codex CLI" }
 )
 foreach ($app in $wingetApps) {
-    $installed = winget list --id $app --accept-source-agreements 2>$null | Out-String
-    if ($installed -match [regex]::Escape($app)) {
-        Write-Host "  $app is already installed." -ForegroundColor Gray
+    $installed = winget list --id $app.Id --accept-source-agreements 2>$null | Out-String
+    if ($installed -match [regex]::Escape($app.Id)) {
+        Write-Host "  $($app.Name) is already installed." -ForegroundColor Gray
     } else {
-        Write-Host "  Installing $app ..." -ForegroundColor Gray
-        winget install --id $app --accept-package-agreements --accept-source-agreements --silent
+        Write-Host "  Installing $($app.Name) ..." -ForegroundColor Gray
+        winget install --id $app.Id --source $app.Source --accept-package-agreements --accept-source-agreements --silent
     }
 }
 
