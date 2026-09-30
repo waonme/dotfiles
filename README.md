@@ -66,6 +66,26 @@ bash ~/dotfiles/setup.sh
 6. Git の include.path 設定 + `autocrlf = input`
 7. デフォルトシェルを zsh に変更
 
+## クイックスタート (macOS)
+
+```bash
+git clone https://github.com/waonme/dotfiles ~/dotfiles
+bash ~/dotfiles/setup-macos.sh
+```
+
+`setup-macos.sh` が以下を自動で行う（sudo・chsh なし。何度実行してもよい）：
+1. `macos/Brewfile` のパッケージとアプリを入れる（`brew bundle`）
+2. Oh My Zsh + カスタムプラグイン (zsh-autosuggestions, zsh-syntax-highlighting)
+3. `.zshrc` のシンボリックリンク作成（既存の `.zshrc` は `.zshrc.bak-<日時>` に退避）
+4. `~/.zshrc.local` の雛形を作る（無いときだけ）
+5. Git の include.path 設定 + `autocrlf = input`
+
+## マシンごとの設定（`~/.zshrc.local`）
+
+`shell/.zshrc` は最後に `~/.zshrc.local` を読む。API キー・マシン固有の PATH・個人的なエイリアスはこちらに書き、dotfiles には入れない（このリポジトリは公開）。秘密の値は `op read 'op://...'` で 1Password から読むのがよい。
+
+`grep→rg`・`find→fd`・`rm→trash`・`cat→bat` と `NO_CLOBBER` は、対話的なシェルで、かつ Claude Code の中（`CLAUDECODE` が立つ）でないときだけ有効にしている。エージェントやスクリプトが標準コマンドの書き方で動けるように。
+
 ## 手動で必要な作業
 
 ### Windows Terminal 設定のマージ
