@@ -80,6 +80,16 @@ bash ~/dotfiles/setup-macos.sh
 4. `~/.zshrc.local` の雛形を作る（無いときだけ）
 5. Git の include.path 設定 + `autocrlf = input`
 
+## 秘密の値のコミットを止める（gitleaks）
+
+`git/hooks/pre-commit-gitleaks` は、ステージした変更を gitleaks で調べ、API キー・トークン・秘密鍵などが入っていればコミットを止める pre-commit フック（値は表示しない）。守りたいリポジトリごとに入れる：
+
+```bash
+ln -sf ~/dotfiles/git/hooks/pre-commit-gitleaks <リポジトリ>/.git/hooks/pre-commit
+```
+
+誤検知で止まったときは、該当行に `gitleaks:allow` のコメントを付けるか、`git commit --no-verify`。履歴全体を調べるときは `gitleaks git <リポジトリ> --redact --log-opts=--all`。
+
 ## マシンごとの設定（`~/.zshrc.local`）
 
 `shell/.zshrc` は最後に `~/.zshrc.local` を読む。API キー・マシン固有の PATH・個人的なエイリアスはこちらに書き、dotfiles には入れない（このリポジトリは公開）。秘密の値は `op read 'op://...'` で 1Password から読むのがよい。
