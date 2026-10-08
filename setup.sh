@@ -106,10 +106,10 @@ mkdir -p "$LOCAL_BIN"
 if [ "$OS_FAMILY" = "fedora" ]; then
     step "Installing dnf packages (Fedora)..."
     # --skip-unavailable: 1 つ名前が見つからなくても取引全体を失敗させない（dnf5）
-    # fd-find は Fedora では fd の名で入る。yq は Go 版。util-linux-user は chsh
+    # fd-find は Fedora では fd の名で入る。yq は Go 版。chsh は util-linux に入っている（Fedora 44 で確認）
     # sd / ast-grep は Fedora のリポジトリに無いので rust / cargo を入れて後で cargo install
     sudo dnf install -y --skip-unavailable \
-        git curl unzip zsh fzf zoxide trash-cli util-linux-user \
+        git curl unzip zsh fzf zoxide trash-cli \
         ripgrep fd-find jq yq bat git-delta difftastic eza hyperfine \
         rust cargo
 else
@@ -320,7 +320,7 @@ ZSH_PATH="$(command -v zsh)"
 if [ "$SHELL" = "$ZSH_PATH" ]; then
     gray "zsh is already the default shell."
 elif ! command -v chsh &>/dev/null; then
-    warn "chsh が無い (Fedora なら util-linux-user)。手動で: chsh -s $ZSH_PATH"
+    warn "chsh が無い。手動で: chsh -s $ZSH_PATH"
 else
     chsh -s "$ZSH_PATH"
     gray "Default shell changed to zsh. Re-login to take effect."
