@@ -1,0 +1,92 @@
+# macOS の Homebrew 一覧。 brew bundle --file=~/dotfiles/macos/Brewfile
+# 新しく入れたらここに足す（brew leaves / brew list --cask と見比べる）
+
+tap "nikitabobko/tap"   # aerospace
+
+# --- シェル（shell/.zshrc が使う） ---
+brew "zsh"
+brew "starship"
+brew "eza"
+brew "bat"
+brew "fd"
+brew "ripgrep"
+brew "fzf"
+brew "zoxide"
+brew "git-delta"
+
+# --- git・GitHub ---
+brew "git"
+brew "git-lfs"
+brew "git-filter-repo"
+brew "gitleaks"
+brew "gh"
+
+# --- 開発 ---
+brew "cmake"
+brew "ninja"
+brew "pkgconf"
+brew "go"
+brew "fnm"
+brew "uv"
+brew "pipx"
+brew "python@3.10"
+brew "python@3.11"
+brew "python@3.12"
+brew "pillow"
+brew "php@8.3"
+brew "composer"
+brew "mariadb"
+brew "nginx"
+brew "shellcheck"
+brew "yq"
+brew "cocoapods"
+brew "xcodegen"
+brew "ios-deploy"
+brew "libimobiledevice"
+brew "libusb"
+brew "gemini-cli"
+
+# --- ネットワーク・運用 ---
+brew "rsync"          # macOS 標準の openrsync では rrsync（読み取り専用の鍵）と組み合わせられない。自宅サーバーのバックアップ取得に必要
+brew "cloudflared"
+brew "wakeonlan"
+brew "dstp"
+
+# --- メディア・ファイル ---
+brew "exiftool"
+brew "mkvtoolnix"
+brew "mpv"
+brew "pngquant"
+brew "sevenzip"
+brew "xdelta"
+brew "openai-whisper"
+brew "mame"
+brew "fish"
+
+# --- アプリ ---
+cask "1password-cli"
+cask "aerospace"
+cask "hammerspoon"
+cask "karabiner-elements"
+cask "espanso"
+cask "battery"
+cask "puremac"
+cask "keycastr"
+cask "warp"
+cask "font-meslo-lg-nerd-font"   # Starship のアイコン用
+cask "brave-browser"
+cask "firefox"
+cask "google-chrome"
+cask "docker-desktop"
+cask "android-studio"
+cask "codex"
+cask "figma"
+cask "krita"
+cask "notion"
+cask "slack"
+cask "discord"
+cask "obs"
+cask "iina"
+cask "retroarch-metal"
+cask "steam"
+cask "adobe-acrobat-reader"

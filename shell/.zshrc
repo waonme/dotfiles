@@ -17,13 +17,17 @@ command -v eza &>/dev/null && alias ls='eza --icons --group-directories-first'
 command -v eza &>/dev/null && alias ll='eza --icons --group-directories-first -la'
 command -v eza &>/dev/null && alias la='eza -a'
 command -v eza &>/dev/null && alias lt='eza --icons --tree --level=2'
-command -v bat &>/dev/null && alias cat='bat --paging=never'
-command -v rg  &>/dev/null && alias grep='rg'
-command -v fd  &>/dev/null && alias find='fd'
-command -v trash &>/dev/null && alias rm='trash'
+# 標準コマンドを別物に差し替えるエイリアスは、人が対話的に使うときだけ。
+# Claude Code（CLAUDECODE が立つ）やスクリプトでは grep・find などの書き方が変わって壊れるので付けない
+if [[ -o interactive && -z "${CLAUDECODE:-}" ]]; then
+    command -v bat &>/dev/null && alias cat='bat --paging=never'
+    command -v rg  &>/dev/null && alias grep='rg'
+    command -v fd  &>/dev/null && alias find='fd'
+    command -v trash &>/dev/null && alias rm='trash'
+fi
 
 # --- fzf ---
-if command -v fzf &>/dev/null; then
+if command -v fzf &>/dev/null && [[ -o zle ]]; then   # キー割り当ては端末があるときだけ（無いと zle のエラーになる）
     eval "$(fzf --zsh 2>/dev/null)" || source <(fzf --zsh 2>/dev/null) || true
 
     export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
@@ -47,7 +51,7 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 setopt AUTO_CD
 setopt AUTO_PUSHD
 setopt PUSHD_IGNORE_DUPS
-setopt NO_CLOBBER
+[[ -o interactive && -z "${CLAUDECODE:-}" ]] && setopt NO_CLOBBER   # > で上書きしない（人が使うときだけ）
 
 # --- 履歴 ---
 HISTSIZE=100000
@@ -56,3 +60,7 @@ HISTFILE=~/.zsh_history
 setopt SHARE_HISTORY
 setopt HIST_IGNORE_DUPS
 setopt HIST_IGNORE_SPACE
+
+# --- マシンごとの設定（git 管理外）---
+# API キー・パス・個人的なエイリアスなど、公開したくない物はここへ
+[ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"

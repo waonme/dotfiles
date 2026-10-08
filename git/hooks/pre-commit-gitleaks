@@ -1,0 +1,10 @@
+#!/bin/sh
+# git の pre-commit フック：ステージした変更に秘密の値（API キー・トークン・秘密鍵など）が無いか gitleaks で確かめる。
+# 見つかったらコミットを止める。値そのものは表示しない（--redact）。
+# 入れ方：ln -sf ~/dotfiles/git/hooks/pre-commit-gitleaks <repo>/.git/hooks/pre-commit
+# 誤検知で止まったときだけ：git commit --no-verify（または該当行に gitleaks:allow のコメント）
+if ! command -v gitleaks >/dev/null 2>&1; then
+    echo "gitleaks が無いのでコミットを止めた（brew install gitleaks / apt install gitleaks）" >&2
+    exit 1
+fi
+exec gitleaks git --pre-commit --staged --redact --no-banner --verbose "$(git rev-parse --show-toplevel)"

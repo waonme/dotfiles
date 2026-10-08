@@ -22,9 +22,10 @@ Windows & Linux (WSL/Ubuntu) 開発環境のセットアップ用。
 
 ### アプリ設定
 - `powertoys/settings.json` — PowerToys 機能の ON/OFF・テーマ設定
-- `git/config` — Git エイリアス、delta ページャー、pull.rebase、rerere 等
+- `git/config` — Git エイリアス、delta ページャー、pull.rebase、rerere 等（user.name / email は書かない。`~/.gitconfig` へ）
+- `git/ignore` — 全 PC 共通の無視ファイル（.DS_Store, Thumbs.db 等。`core.excludesFile`）
 - `shell/.zshrc` — zsh 設定（Oh My Zsh + Starship、エイリアス、fzf、zoxide、補完、履歴）
-- `wsl/.wslconfig` — WSL2 リソース制限（メモリ、swap、プロセッサ数）
+- `wsl/.wslconfig` — WSL2 リソース制限（メモリ、swap、プロセッサ数。値はマシンに合わせて直す）
 
 ### セットアップ
 - `setup.ps1` — Windows 一括セットアップスクリプト
@@ -65,6 +66,36 @@ bash ~/dotfiles/setup.sh
 5. `.zshrc` のシンボリックリンク作成
 6. Git の include.path 設定 + `autocrlf = input`
 7. デフォルトシェルを zsh に変更
+
+## クイックスタート (macOS)
+
+```bash
+git clone https://github.com/waonme/dotfiles ~/dotfiles
+bash ~/dotfiles/setup-macos.sh
+```
+
+`setup-macos.sh` が以下を自動で行う（sudo・chsh なし。何度実行してもよい）：
+1. `macos/Brewfile` のパッケージとアプリを入れる（`brew bundle`）
+2. Oh My Zsh + カスタムプラグイン (zsh-autosuggestions, zsh-syntax-highlighting)
+3. `.zshrc` のシンボリックリンク作成（既存の `.zshrc` は `.zshrc.bak-<日時>` に退避）
+4. `~/.zshrc.local` の雛形を作る（無いときだけ）
+5. Git の include.path 設定 + `autocrlf = input`
+
+## 秘密の値のコミットを止める（gitleaks）
+
+`git/hooks/pre-commit-gitleaks` は、ステージした変更を gitleaks で調べ、API キー・トークン・秘密鍵などが入っていればコミットを止める pre-commit フック（値は表示しない）。守りたいリポジトリごとに入れる：
+
+```bash
+ln -sf ~/dotfiles/git/hooks/pre-commit-gitleaks <リポジトリ>/.git/hooks/pre-commit
+```
+
+誤検知で止まったときは、該当行に `gitleaks:allow` のコメントを付けるか、`git commit --no-verify`。履歴全体を調べるときは `gitleaks git <リポジトリ> --redact --log-opts=--all`。
+
+## マシンごとの設定（`~/.zshrc.local`）
+
+`shell/.zshrc` は最後に `~/.zshrc.local` を読む。API キー・マシン固有の PATH・個人的なエイリアスはこちらに書き、dotfiles には入れない（このリポジトリは公開）。秘密の値は `op read 'op://...'` で 1Password から読むのがよい。
+
+`grep→rg`・`find→fd`・`rm→trash`・`cat→bat` と `NO_CLOBBER` は、対話的なシェルで、かつ Claude Code の中（`CLAUDECODE` が立つ）でないときだけ有効にしている。エージェントやスクリプトが標準コマンドの書き方で動けるように。
 
 ## 手動で必要な作業
 
