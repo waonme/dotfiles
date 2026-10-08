@@ -1,0 +1,45 @@
+Windows Registry Editor Version 5.00
+
+; Windows 全般の調整（HKCU のみ。管理者権限は不要）
+; - ダークモード（アプリとシステム）
+; - スクロールバーを常に表示（自動で細くしない）
+; - おすすめ・ヒント・ようこそ画面・スタートのおすすめを抑制
+; - テキストカーソル（キャレット）を太くする
+; 反映にはエクスプローラーの再起動（項目によっては再ログイン）が必要
+
+; --- ダークモード ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize]
+"AppsUseLightTheme"=dword:00000000
+"SystemUsesLightTheme"=dword:00000000
+
+; --- スクロールバー常時表示 ---
+[HKEY_CURRENT_USER\Control Panel\Accessibility]
+"DynamicScrollbars"=dword:00000000
+
+; --- 通知・おすすめの抑制 ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager]
+; Windows のヒント・提案
+"SubscribedContent-338389Enabled"=dword:00000000
+; スタートのおすすめアプリ
+"SubscribedContent-338388Enabled"=dword:00000000
+; ようこそ画面（更新後の案内）
+"SubscribedContent-310093Enabled"=dword:00000000
+; 設定アプリ内のおすすめ
+"SubscribedContent-353694Enabled"=dword:00000000
+"SubscribedContent-353696Enabled"=dword:00000000
+; アプリの自動インストール・提案
+"SilentInstalledAppsEnabled"=dword:00000000
+"SoftLandingEnabled"=dword:00000000
+"SystemPaneSuggestionsEnabled"=dword:00000000
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+; スタートの「おすすめ」
+"Start_IrisRecommendations"=dword:00000000
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement]
+; 「Windows の使用を完了する」の提案
+"ScoobeSystemSettingEnabled"=dword:00000000
+
+; --- テキストカーソルの太さ (px) ---
+[HKEY_CURRENT_USER\Control Panel\Desktop]
+"CaretWidth"=dword:00000003

@@ -22,9 +22,10 @@ Windows & Linux (WSL/Ubuntu) 開発環境のセットアップ用。
 
 ### アプリ設定
 - `powertoys/settings.json` — PowerToys 機能の ON/OFF・テーマ設定
-- `git/config` — Git エイリアス、delta ページャー、pull.rebase、rerere 等
+- `git/config` — Git エイリアス、delta ページャー、pull.rebase、rerere 等（user.name / email は書かない。`~/.gitconfig` へ）
+- `git/ignore` — 全 PC 共通の無視ファイル（.DS_Store, Thumbs.db 等。`core.excludesFile`）
 - `shell/.zshrc` — zsh 設定（Oh My Zsh + Starship、エイリアス、fzf、zoxide、補完、履歴）
-- `wsl/.wslconfig` — WSL2 リソース制限（メモリ、swap、プロセッサ数）
+- `wsl/.wslconfig` — WSL2 リソース制限（メモリ、swap、プロセッサ数。値はマシンに合わせて直す）
 
 ### セットアップ
 - `setup.ps1` — Windows 一括セットアップスクリプト

@@ -1,0 +1,6 @@
+# 全 PC 共通の無視ファイル（git/config の core.excludesFile）。OS が作るゴミだけ。プロジェクト固有のものは各リポジトリの .gitignore へ
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
