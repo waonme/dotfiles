@@ -38,11 +38,17 @@ function Invoke-ScoopInstallFromFile {
     if ($scoopData.apps) {
         Write-Host "  Installing apps listed in scoopfile..." -ForegroundColor Gray
         foreach ($app in $scoopData.apps) {
-            if ([string]::IsNullOrWhiteSpace([string]$app)) { continue }
+            # scoop export の形式は { Name, Source, Version, ... } のオブジェクト。文字列だけの行も許す
+            $appName = if ($app -is [string]) { $app } else { [string]$app.Name }
+            if ([string]::IsNullOrWhiteSpace($appName)) { continue }
+            $appSpec = $appName
+            if (-not ($app -is [string]) -and -not [string]::IsNullOrWhiteSpace([string]$app.Source)) {
+                $appSpec = "$($app.Source)/$appName"
+            }
             try {
-                scoop install $app | Out-Host
+                scoop install $appSpec | Out-Host
             } catch {
-                Write-Host "  [WARN] Failed to install '$app'." -ForegroundColor Red
+                Write-Host "  [WARN] Failed to install '$appSpec'." -ForegroundColor Red
                 Write-Host "         $($_.Exception.Message)" -ForegroundColor Red
             }
         }
@@ -197,6 +203,41 @@ $profileRoots = @(
     }
 } else {
     Write-Host "  PowerShell profile not found, skipping." -ForegroundColor Red
+}
+
+# 4b. AI agent instructions (ai/AGENTS.md -> ~/.claude/CLAUDE.md, ~/.codex/AGENTS.md)
+#     源は ai/AGENTS.md の 1 ファイル。Windows はシンボリックリンクに権限が要るのでプロファイルと同じくコピー
+Write-Host ""
+Write-Host "Setting up AI agent instructions..." -ForegroundColor Yellow
+$aiSource = Join-Path $PSScriptRoot "ai\AGENTS.md"
+$aiMarker = "managed by dotfiles"   # ai/AGENTS.md の 1 行目。これが無い中身のあるファイルは自分で書いたもの
+if (Test-Path $aiSource) {
+    $aiDests = @(
+        (Join-Path $env:USERPROFILE ".claude\CLAUDE.md")
+        (Join-Path $env:USERPROFILE ".codex\AGENTS.md")
+    )
+    foreach ($dest in $aiDests) {
+        $destDir = Split-Path $dest -Parent
+        if (-not (Test-Path $destDir)) {
+            New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+        }
+        if (Test-Path $dest) {
+            $existing = Get-Content -Raw $dest -ErrorAction SilentlyContinue
+            if (-not [string]::IsNullOrWhiteSpace($existing) -and $existing -notmatch [regex]::Escape($aiMarker)) {
+                # 自分で書いた中身がある → 上書きしない。統合は手で決める
+                Write-Host "  [WARN] $dest has its own content; left untouched. Merge it into ai\AGENTS.md, delete it, then re-run." -ForegroundColor Yellow
+                continue
+            }
+            if ($existing -eq (Get-Content -Raw $aiSource)) {
+                Write-Host "  Up to date: $dest" -ForegroundColor Gray
+                continue
+            }
+        }
+        Copy-Item $aiSource $dest -Force
+        Write-Host "  Updated: $dest" -ForegroundColor Gray
+    }
+} else {
+    Write-Host "  ai\AGENTS.md not found, skipping." -ForegroundColor Red
 }
 
 # 5. Git config (include portable settings)

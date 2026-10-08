@@ -1,11 +1,19 @@
 # dotfiles
 
-Windows & Linux (WSL/Ubuntu) 開発環境のセットアップ用。
+Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットアップ用。
 
 ## 含まれるもの
 
 ### パッケージ
-- `scoopfile.json` — [Scoop](https://scoop.sh/) パッケージ一覧（bat, eza, fd, ripgrep, fzf, delta, autohotkey, everything, sharex 等含む）
+- `scoopfile.json` — [Scoop](https://scoop.sh/) パッケージ一覧（bat, eza, fd, ripgrep, fzf, delta, jq, yq, sd, ast-grep, difftastic, hyperfine 等含む）
+- `macos/Brewfile` — macOS の Homebrew 一覧
+
+### AI エージェント用の指示書
+- `ai/AGENTS.md` — Claude Code / Codex CLI に現代的な CLI ツール（rg, fd, jq, ast-grep, sd, yq, difft, bat, eza, hyperfine）を優先して使わせる指示書。源はこの 1 ファイルで、セットアップスクリプトが次の 2 か所に配る
+  - `~/.claude/CLAUDE.md`（Claude Code）
+  - `~/.codex/AGENTS.md`（Codex CLI）
+  - Linux はシンボリックリンク、Windows はコピー。既に自分で書いた中身があるファイルは触らず警告だけ出す（統合してから消して再実行）
+- `docs/cli-tools.md` — 同じツール群の人間向け一覧とインストール方法
 
 ### レジストリ設定
 - `keyboard/capslock-to-ctrl.reg` — CapsLock → Ctrl キーリマップ
@@ -28,7 +36,8 @@ Windows & Linux (WSL/Ubuntu) 開発環境のセットアップ用。
 
 ### セットアップ
 - `setup.ps1` — Windows 一括セットアップスクリプト
-- `setup.sh` — Linux/WSL (Ubuntu/Debian) 一括セットアップスクリプト
+- `setup.sh` — Linux (Fedora / Ubuntu / Debian、WSL 含む) 一括セットアップスクリプト
+- `setup-macos.sh` — macOS 一括セットアップスクリプト
 
 ## クイックスタート (Windows)
 
@@ -46,25 +55,39 @@ pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 1. Scoop インストール & パッケージインポート
 2. 全レジストリ設定のインポート
 3. PowerShell プロファイルの反映
-4. Git の include.path 設定 + `autocrlf = true`
-5. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI)
-6. `.wslconfig` のコピー
+4. AI 指示書 `ai/AGENTS.md` を `~/.claude/CLAUDE.md` と `~/.codex/AGENTS.md` にコピー
+5. Git の include.path 設定 + `autocrlf = true`
+6. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI)
+7. `.wslconfig` のコピー
 
-## クイックスタート (Linux/WSL)
+## クイックスタート (Linux: Fedora / Ubuntu / Debian / WSL)
 
 ```bash
 git clone https://github.com/waonme/dotfiles ~/dotfiles
 bash ~/dotfiles/setup.sh
 ```
 
+`/etc/os-release` の `ID` / `ID_LIKE` で Fedora 系か Debian 系かを判定し、何度実行しても同じ結果になる。
+
 `setup.sh` が以下を自動で行う：
-1. apt でツールインストール (zsh, bat, fd-find, ripgrep, fzf, zoxide, trash-cli, eza, delta)
+1. パッケージインストール
+   - Fedora: `dnf install --skip-unavailable` で zsh, fzf, zoxide, trash-cli, ripgrep, fd-find, jq, yq, bat, git-delta, difftastic, eza, hyperfine, rust, cargo。リポジトリに無い `sd` と `ast-grep` は `cargo install --locked`
+   - Ubuntu/Debian: apt で zsh, fzf, zoxide, trash-cli, ripgrep, fd-find, jq, bat, sd, hyperfine。eza は gierens PPA、delta は .deb。apt の `yq` は Python 版なので使わず、`yq` (Go 版) / `ast-grep` / `difft` は GitHub release のバイナリを `~/.local/bin` に置く（apt の rustc は古くて `cargo install` が通らない）
 2. Oh My Zsh + カスタムプラグイン (zsh-autosuggestions, zsh-syntax-highlighting) インストール
 3. Starship プロンプトインストール
 4. Debian 互換シンボリックリンク作成 (`batcat→bat`, `fdfind→fd`)
 5. `.zshrc` のシンボリックリンク作成
-6. Git の include.path 設定 + `autocrlf = input`
-7. デフォルトシェルを zsh に変更
+6. `~/.cargo/bin` があれば `~/.bashrc` の PATH **末尾**に 1 回だけ追記（`.zshrc` 側は dotfiles に入っている。末尾なのは ast-grep が置く `sg` で shadow-utils の `/usr/bin/sg` を隠さないため。`ast-grep` の名前で呼ぶ）
+7. AI 指示書 `ai/AGENTS.md` を `~/.claude/CLAUDE.md` と `~/.codex/AGENTS.md` にシンボリックリンク
+8. Git の include.path 設定 + `autocrlf = input`
+9. デフォルトシェルを zsh に変更
+
+実行後の確認：
+
+```bash
+for t in rg fd jq ast-grep sd yq difft bat eza hyperfine; do printf '%-10s ' "$t"; command -v "$t" || echo MISSING; done
+ls -l ~/.claude/CLAUDE.md ~/.codex/AGENTS.md
+```
 
 ## クイックスタート (macOS)
 

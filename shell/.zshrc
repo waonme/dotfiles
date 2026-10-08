@@ -5,6 +5,8 @@
 
 # --- PATH ---
 [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
+# cargo (sd, ast-grep など) は末尾に足す: ast-grep が置く ~/.cargo/bin/sg で /usr/bin/sg (shadow-utils) を隠さないように
+[[ -d "$HOME/.cargo/bin" && ":$PATH:" != *":$HOME/.cargo/bin:"* ]] && export PATH="$PATH:$HOME/.cargo/bin"
 
 # --- Oh My Zsh ---
 export ZSH="$HOME/.oh-my-zsh"
