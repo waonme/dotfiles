@@ -32,7 +32,6 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 - `powertoys/settings.json` — PowerToys 機能の ON/OFF・テーマ設定
 - `git/config` — Git エイリアス、delta ページャー、pull.rebase、rerere 等
 - `shell/.zshrc` — zsh 設定（Oh My Zsh + Starship、エイリアス、fzf、zoxide、補完、履歴）
-- `shell/.zshrc.macos` — macOS だけの zsh 設定（`.zshrc` が darwin のときだけ読む。`THEO_HOBBY_DIR` など）
 - `wsl/.wslconfig` — WSL2 リソース制限（メモリ、swap、プロセッサ数）
 
 ### セットアップ
@@ -116,7 +115,7 @@ ln -sf ~/dotfiles/git/hooks/pre-commit-gitleaks <リポジトリ>/.git/hooks/pre
 
 ## マシンごとの設定（`~/.zshrc.local`）
 
-`shell/.zshrc` は最後に `~/.zshrc.local` を読む。API キー・マシン固有の PATH・個人的なエイリアスはこちらに書き、dotfiles には入れない（このリポジトリは公開）。秘密の値は `op read 'op://...'` で 1Password から読むのがよい。
+`shell/.zshrc` は `~/.config/theodore/env`（あれば。`~/theodore/install.sh` が書く `THEO_HOBBY_DIR`）を読んだあと、最後に `~/.zshrc.local` を読む。API キー・マシン固有の PATH・個人的なエイリアスはこちらに書き、dotfiles には入れない（このリポジトリは公開）。秘密の値は `op read 'op://...'` で 1Password から読むのがよい。
 
 `grep→rg`・`find→fd`・`rm→trash`・`cat→bat` と `NO_CLOBBER` は、対話的なシェルで、かつ Claude Code の中（`CLAUDECODE` が立つ）でないときだけ有効にしている。エージェントやスクリプトが標準コマンドの書き方で動けるように。
 

@@ -63,8 +63,8 @@ setopt SHARE_HISTORY
 setopt HIST_IGNORE_DUPS
 setopt HIST_IGNORE_SPACE
 
-# --- macOS だけの設定 ---
-[[ "$OSTYPE" == darwin* && -f "$HOME/dotfiles/shell/.zshrc.macos" ]] && source "$HOME/dotfiles/shell/.zshrc.macos"
+# --- theodore（~/theodore/install.sh が書く THEO_HOBBY_DIR。マシンごとの値なので dotfiles には持たない）---
+[ -f "$HOME/.config/theodore/env" ] && source "$HOME/.config/theodore/env"
 
 # --- マシンごとの設定（git 管理外）---
 # API キー・パス・個人的なエイリアスなど、公開したくない物はここへ

@@ -1,8 +1,0 @@
-# ~/dotfiles/shell/.zshrc.macos — macOS だけの zsh 設定
-# shell/.zshrc が $OSTYPE == darwin* のときだけ読む。秘密の値や公開したくない物は ~/.zshrc.local へ
-
-# --- セオドア（~/theodore）の趣味の場 ---
-# Claude Code の SessionStart / SessionEnd フックは、この下で開いたときだけ theodore を pull / push する
-# （~/.claude/settings.json 側。設定の仕方は ~/theodore/SETUP.md）。
-# Claude Code は、この変数が通ったシェルから起動すること
-export THEO_HOBBY_DIR="/Volumes/ExtSSD/offloaded/orange/home/hobby"
