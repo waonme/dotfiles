@@ -32,6 +32,7 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 - `powertoys/settings.json` — PowerToys 機能の ON/OFF・テーマ設定
 - `git/config` — Git エイリアス、delta ページャー、pull.rebase、rerere 等
 - `shell/.zshrc` — zsh 設定（Oh My Zsh + Starship、エイリアス、fzf、zoxide、補完、履歴）
+- `shell/.zshrc.macos` — macOS だけの zsh 設定（`.zshrc` が darwin のときだけ読む。`THEO_HOBBY_DIR` など）
 - `wsl/.wslconfig` — WSL2 リソース制限（メモリ、swap、プロセッサ数）
 
 ### セットアップ

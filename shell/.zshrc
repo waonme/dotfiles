@@ -63,6 +63,9 @@ setopt SHARE_HISTORY
 setopt HIST_IGNORE_DUPS
 setopt HIST_IGNORE_SPACE
 
+# --- macOS だけの設定 ---
+[[ "$OSTYPE" == darwin* && -f "$HOME/dotfiles/shell/.zshrc.macos" ]] && source "$HOME/dotfiles/shell/.zshrc.macos"
+
 # --- マシンごとの設定（git 管理外）---
 # API キー・パス・個人的なエイリアスなど、公開したくない物はここへ
 [ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"
