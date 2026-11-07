@@ -176,6 +176,28 @@ foreach ($reg in $regFiles) {
     Invoke-RegImportWithFallback -Path (Join-Path $PSScriptRoot $reg.Path) -RequiresAdmin:($reg.RequiresAdmin) -NeedExplorerRestart:($reg.NeedExplorerRestart)
 }
 
+# 3b. IME hotkeys (Win+Shift+F11 = off, Win+Shift+F12 = on), started at login
+Write-Host ""
+Write-Host "Setting up IME hotkeys..." -ForegroundColor Yellow
+$imeScript = Join-Path $PSScriptRoot "keyboard\ime-hotkey.ps1"
+if (Test-Path $imeScript) {
+    $psExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+    $imeArgs = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$imeScript`""
+    $startupLnk = Join-Path ([Environment]::GetFolderPath('Startup')) "IME Hotkey.lnk"
+    $shell = New-Object -ComObject WScript.Shell
+    $lnk = $shell.CreateShortcut($startupLnk)
+    $lnk.TargetPath = $psExe
+    $lnk.Arguments = $imeArgs
+    $lnk.WindowStyle = 7
+    $lnk.Save()
+    Write-Host "  Registered startup shortcut: $startupLnk" -ForegroundColor Gray
+    # Start now too (the script exits right away if it is already running)
+    Start-Process $psExe -ArgumentList $imeArgs -WindowStyle Hidden
+    Write-Host "  Started IME hotkeys (Win+Shift+F11 = off, Win+Shift+F12 = on)" -ForegroundColor Gray
+} else {
+    Write-Host "  keyboard\ime-hotkey.ps1 not found, skipping." -ForegroundColor Red
+}
+
 # 4. Set up PowerShell profile
 Write-Host ""
 Write-Host "Setting up PowerShell profile..." -ForegroundColor Yellow

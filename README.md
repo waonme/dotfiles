@@ -9,6 +9,7 @@ Windows & Linux (WSL/Ubuntu) 開発環境のセットアップ用。
 
 ### レジストリ設定
 - `keyboard/capslock-to-ctrl.reg` — CapsLock → Ctrl キーリマップ
+- `keyboard/ime-hotkey.ps1` — Win+Shift+F11 で IME オフ、Win+Shift+F12 で IME オン（スタートアップに登録して常駐。ログは `%LOCALAPPDATA%\ime-hotkey.log`）
 - `explorer/settings.reg` — エクスプローラー（拡張子表示、隠しファイル表示、コンパクト表示、PCで開く）
 - `mouse/no-acceleration.reg` — マウス加速無効化
 - `taskbar/cleanup.reg` — タスクバー整理（検索アイコン化、Copilot/ウィジェット/タスクビュー/チャット非表示）
@@ -45,6 +46,7 @@ pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 `setup.ps1` が以下を自動で行う：
 1. Scoop インストール & パッケージインポート
 2. 全レジストリ設定のインポート
+   - IME ホットキー（Win+Shift+F11 / F12）をスタートアップに登録して起動
 3. PowerShell プロファイルの反映
 4. Git の include.path 設定 + `autocrlf = true`
 5. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI)
