@@ -14,6 +14,8 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+# git の出力（UTF-8）を CP932 として読んで化けないように
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
 . (Join-Path $PSScriptRoot "lib\hosts.ps1")
 
