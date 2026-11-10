@@ -1,0 +1,17 @@
+# ~/.wslconfig — WSL2 の仮想マシン設定（setup.ps1 が %USERPROFILE%\.wslconfig にコピーする）
+# 値はマシンごとに違う。memory / processors は物理の半分くらいを目安に調整する
+# 変更後: wsl --shutdown で反映
+
+[wsl2]
+# メモリ上限（既定はホストの 50%）
+memory=16GB
+# swap（0 で無効）
+swap=8GB
+# 論理プロセッサ数
+processors=8
+# Windows ↔ Linux 間のファイル共有を virtiofs で（9P より速い）
+virtiofs=true
+
+[general]
+# アイドルでもインスタンスを止めない（-1 = 無期限。既定は 60000 ms）
+instanceIdleTimeout=-1

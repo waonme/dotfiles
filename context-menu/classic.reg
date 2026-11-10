@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+; 右クリックメニューを旧式（フル表示）に戻す（Windows 11）
+; この CLSID の InprocServer32 を空にすると新しいコンテキストメニューが無効になる
+; 反映にはエクスプローラーの再起動が必要
+; 元に戻す: reg delete "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" /f
+
+[HKEY_CURRENT_USER\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32]
+@=""
