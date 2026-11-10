@@ -36,7 +36,7 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 - `git/config` — Git エイリアス、delta ページャー、pull.rebase、rerere 等（user.name / email は書かない。`~/.gitconfig` へ）
 - `git/ignore` — 全 PC 共通の無視ファイル（.DS_Store, Thumbs.db 等。`core.excludesFile`）
 - `shell/.zshrc` — zsh 設定（Oh My Zsh + Starship、エイリアス、fzf、zoxide、補完、履歴）
-- `wsl/.wslconfig` — WSL2 リソース制限（メモリ、swap、プロセッサ数。値はマシンに合わせて直す）
+- `wsl/.wslconfig` — WSL2 設定の型。memory / swap / processors は PC ごとなので、実際の値は非公開の dotfiles-hosts に置く（[マシンごとの設定](#マシンごとの設定)）
 
 ### セットアップ
 - `setup.ps1` — Windows 一括セットアップスクリプト（`setup.cmd` はダブルクリック用の入口）
@@ -47,6 +47,7 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 
 ```powershell
 git clone https://github.com/waonme/dotfiles ~/dotfiles
+git clone https://github.com/waonme/dotfiles-hosts ~/dotfiles-hosts   # 非公開。PC ごとの値
 
 # 初回セットアップ（Windows 標準の PowerShell で実行）
 powershell -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
@@ -65,12 +66,13 @@ pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 5. Git の include.path 設定 + `autocrlf = true`
 6. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI, AutoHotkey v2)
 7. `keyboard/mac-keys.ahk` をスタートアップに登録して起動
-8. `.wslconfig` のコピー（既にあれば上書きせず、中身が違えば警告だけ。値はマシンごとなので手で合わせる）
+8. `.wslconfig` を `dotfiles-hosts/<COMPUTERNAME>/` から配る（無ければ型を配って警告。手で直した `~/.wslconfig` は上書きしない）
 
 ## クイックスタート (Linux: Fedora / Ubuntu / Debian / WSL)
 
 ```bash
 git clone https://github.com/waonme/dotfiles ~/dotfiles
+git clone https://github.com/waonme/dotfiles-hosts ~/dotfiles-hosts   # 非公開。PC ごとの値
 bash ~/dotfiles/setup.sh
 ```
 
@@ -100,6 +102,7 @@ ls -l ~/.claude/CLAUDE.md ~/.codex/AGENTS.md
 
 ```bash
 git clone https://github.com/waonme/dotfiles ~/dotfiles
+git clone https://github.com/waonme/dotfiles-hosts ~/dotfiles-hosts   # 非公開。PC ごとの値
 bash ~/dotfiles/setup-macos.sh
 ```
 
@@ -120,7 +123,24 @@ ln -sf ~/dotfiles/git/hooks/pre-commit-gitleaks <リポジトリ>/.git/hooks/pre
 
 誤検知で止まったときは、該当行に `gitleaks:allow` のコメントを付けるか、`git commit --no-verify`。履歴全体を調べるときは `gitleaks git <リポジトリ> --redact --log-opts=--all`。
 
-## マシンごとの設定（`~/.zshrc.local`）
+## マシンごとの設定
+
+値の種類で置き場所を分ける。
+
+| 種類 | 例 | 置き場所 |
+|---|---|---|
+| 全 PC 共通 | git のエイリアス、zsh、mac-keys | このリポジトリ |
+| PC ごと・秘密ではない | `.wslconfig` の memory / processors | 非公開リポジトリ dotfiles-hosts の `<ホスト名>/` |
+| 秘密 | API キー、社用の email | dotfiles の外（`~/.zshrc.local`、`~/.gitconfig`、1Password） |
+
+### dotfiles-hosts（PC ごとの値）
+
+- dotfiles と同じ階層に clone する（`~/dotfiles-hosts`）。別の場所なら環境変数 `DOTFILES_HOSTS`
+- `setup.ps1` は `<COMPUTERNAME>/` だけを読む。**別の PC のファイルは決して使わない**ので、値が混ざらない
+- この PC 用のファイルが無いときは、型（例 `wsl/.wslconfig`）を配り「`<COMPUTERNAME>/.wslconfig` を作ってコミットして」と出す。既に配り先があれば触らない
+- 値を変えるときは dotfiles-hosts 側を直してコミットし、`setup.ps1` を再実行する。前回配った中身の控え（`%LOCALAPPDATA%\dotfiles\deployed\`）と配り先が同じときだけ上書きし、配り先を手で直していたら上書きせずに警告する
+
+### `~/.zshrc.local`
 
 `shell/.zshrc` は `~/.config/theodore/env`（あれば。`~/theodore/install.sh` が書く `THEO_HOBBY_DIR`）を読んだあと、最後に `~/.zshrc.local` を読む。API キー・マシン固有の PATH・個人的なエイリアスはこちらに書き、dotfiles には入れない（このリポジトリは公開）。秘密の値は `op read 'op://...'` で 1Password から読むのがよい。
 

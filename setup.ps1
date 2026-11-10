@@ -16,6 +16,65 @@ function Test-IsAdmin {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# PC ごとの設定値は非公開リポジトリ dotfiles-hosts の <COMPUTERNAME>/ に置く（公開の dotfiles には型だけ）
+# 既定は dotfiles と同じ階層の dotfiles-hosts。別の場所なら環境変数 DOTFILES_HOSTS
+$HostsRoot = if ($env:DOTFILES_HOSTS) { $env:DOTFILES_HOSTS } else { Join-Path (Split-Path $PSScriptRoot -Parent) "dotfiles-hosts" }
+$HostName = $env:COMPUTERNAME
+# 最後に配った中身の控え。配り先が控えと同じなら手で直されていないので、上書きしてよい
+$DeployedStateDir = Join-Path $(if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $env:HOME }) "dotfiles\deployed"
+
+function Install-HostFile {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,      # dotfiles-hosts/<COMPUTERNAME>/ の中のファイル名
+        [Parameter(Mandatory = $true)][string]$Template,  # 公開側の型。host 用ファイルがまだ無い PC にだけ配る
+        [Parameter(Mandatory = $true)][string]$Dest
+    )
+    $hostFile = Join-Path (Join-Path $HostsRoot $HostName) $Name
+    $stateFile = Join-Path $DeployedStateDir $Name
+
+    if (Test-Path $hostFile) {
+        $src = Get-Content -Raw $hostFile
+        $state = if (Test-Path $stateFile) { Get-Content -Raw $stateFile } else { $null }
+        if (Test-Path $Dest) {
+            $cur = Get-Content -Raw $Dest
+            if ($cur -eq $src) {
+                Write-Host "  Up to date: $Dest" -ForegroundColor Gray
+                Save-DeployedState $hostFile $stateFile
+                return
+            }
+            if ($null -eq $state -or $cur -ne $state) {
+                # 配ったあとに手で直された（または控えが無く判断できない）→ 上書きしない
+                Write-Host "  [WARN] $Dest differs from $hostFile and was not written by this script; left untouched." -ForegroundColor Yellow
+                Write-Host "         Keep yours: copy it over $hostFile and commit. Take the repo's: delete $Dest and re-run." -ForegroundColor Yellow
+                return
+            }
+        }
+        Copy-Item $hostFile $Dest -Force
+        Save-DeployedState $hostFile $stateFile
+        Write-Host "  Deployed $hostFile -> $Dest" -ForegroundColor Gray
+        return
+    }
+
+    # この PC の host 用ファイルが無い。別の PC のものは使わない
+    if (-not (Test-Path $HostsRoot)) {
+        Write-Host "  [WARN] $HostsRoot not found. Clone the private dotfiles-hosts repo there, or set DOTFILES_HOSTS." -ForegroundColor Yellow
+    }
+    if (-not (Test-Path $Dest)) {
+        Copy-Item $Template $Dest
+        Write-Host "  [WARN] No $hostFile; copied the template to $Dest." -ForegroundColor Yellow
+        Write-Host "         Fill in this machine's values, then copy it to $hostFile and commit." -ForegroundColor Yellow
+    } else {
+        Write-Host "  [WARN] No $hostFile; existing $Dest left untouched. Copy it to $hostFile and commit to track it." -ForegroundColor Yellow
+    }
+}
+
+function Save-DeployedState {
+    param([string]$From, [string]$StateFile)
+    $dir = Split-Path $StateFile -Parent
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    Copy-Item $From $StateFile -Force
+}
+
 Write-Host "=== dotfiles setup ===" -ForegroundColor Cyan
 
 function Invoke-ScoopInstallFromFile {
@@ -326,21 +385,12 @@ if (Test-Path $macKeys) {
     Write-Host "  keyboard\mac-keys.ahk not found, skipping." -ForegroundColor Red
 }
 
-# 7. Copy .wslconfig
+# 7. .wslconfig（PC ごとの値。dotfiles-hosts/<COMPUTERNAME>/.wslconfig、無ければ型 wsl/.wslconfig）
 Write-Host ""
 Write-Host "Setting up WSL config..." -ForegroundColor Yellow
-$wslConfig = Join-Path $PSScriptRoot "wsl\.wslconfig"
-$wslDest = Join-Path $env:USERPROFILE ".wslconfig"
-# 値（memory / processors 等）はマシンごとに違うので、既にあれば上書きしない
-if (Test-Path $wslConfig) {
-    if (-not (Test-Path $wslDest)) {
-        Copy-Item $wslConfig $wslDest
-        Write-Host "  Copied .wslconfig to $wslDest (adjust memory / processors for this machine)" -ForegroundColor Gray
-    } elseif ((Get-Content -Raw $wslDest) -eq (Get-Content -Raw $wslConfig)) {
-        Write-Host "  Up to date: $wslDest" -ForegroundColor Gray
-    } else {
-        Write-Host "  [WARN] $wslDest already exists and differs from wsl\.wslconfig; left untouched. Compare them by hand." -ForegroundColor Yellow
-    }
+$wslTemplate = Join-Path $PSScriptRoot "wsl\.wslconfig"
+if (Test-Path $wslTemplate) {
+    Install-HostFile -Name ".wslconfig" -Template $wslTemplate -Dest (Join-Path $env:USERPROFILE ".wslconfig")
 } else {
     Write-Host "  wsl\.wslconfig not found, skipping." -ForegroundColor Red
 }

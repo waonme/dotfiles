@@ -1,14 +1,13 @@
-# ~/.wslconfig — WSL2 の仮想マシン設定（setup.ps1 が %USERPROFILE%\.wslconfig にコピーする）
-# 値はマシンごとに違う。memory / processors は物理の半分くらいを目安に調整する
+# ~/.wslconfig の型（WSL2 の仮想マシン設定）
+# PC ごとの値は hosts/<COMPUTERNAME>/.wslconfig に置く。setup.ps1 はそちらを配り、
+# まだ無い PC にだけこの型を配る（そのあと hosts/<COMPUTERNAME>/ に移してコミットする）
 # 変更後: wsl --shutdown で反映
 
 [wsl2]
-# メモリ上限（既定はホストの 50%）
-memory=16GB
-# swap（0 で無効）
-swap=8GB
-# 論理プロセッサ数
-processors=8
+# PC ごとの値。物理の半分くらいを目安に、コメントを外して決める
+# memory=16GB
+# swap=8GB
+# processors=8
 # Windows ↔ Linux 間のファイル共有を virtiofs で（9P より速い）
 virtiofs=true
 
