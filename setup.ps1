@@ -73,7 +73,7 @@ function Invoke-RegImportWithFallback {
     }
 
     if ($RequiresAdmin -and -not (Test-IsAdmin)) {
-        Write-Host "  [WARN] $fileName requires administrator. Re-run setup as admin." -ForegroundColor Yellow
+        Write-Host "  [WARN] $fileName requires administrator; skipped. Use 5 in the setup.cmd menu." -ForegroundColor Yellow
         return
     }
 

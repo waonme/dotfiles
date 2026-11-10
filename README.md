@@ -39,7 +39,9 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 - `wsl/.wslconfig` — WSL2 設定の型。memory / swap / processors は PC ごとなので、実際の値は非公開の dotfiles-hosts に置く（[マシンごとの設定](#マシンごとの設定)）
 
 ### セットアップ
-- `setup.ps1` — Windows 一括セットアップスクリプト（`setup.cmd` はダブルクリック用の入口）
+- `setup.cmd` — Windows の入口（ダブルクリック）。`menu.ps1` の状態一覧と番号メニューを開く
+- `menu.ps1` — 状態一覧と番号メニュー。文言が日本語なので、このファイルとプロファイルだけ BOM 付き UTF-8（ほかの .ps1 は文字列を ASCII に保つ）
+- `setup.ps1` — Windows 一括セットアップスクリプト（メニューの 1 / 2 から流れる）
 - `setup.sh` — Linux (Fedora / Ubuntu / Debian、WSL 含む) 一括セットアップスクリプト
 - `setup-macos.sh` — macOS 一括セットアップスクリプト
 - `backup-hosts.ps1` — この PC の設定値を非公開の dotfiles-hosts に吸い上げてコミット・push する（`backup-hosts.cmd` はダブルクリック用の入口）（[マシンごとの設定](#マシンごとの設定)）
@@ -47,23 +49,36 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 
 ## クイックスタート (Windows)
 
-コマンドを打つのは 2 の clone だけ。あとはエクスプローラーでダブルクリックする。管理者として実行する必要はない。
+コマンドを打つのは 2 の clone だけ。あとは `setup.cmd` をダブルクリックして、メニューで Enter を押していく。管理者として実行する必要はない。
 
 1. **git を入れる**（まだ無ければ）。PowerShell で `winget install --id Git.Git -e`、または [Git for Windows](https://git-scm.com/download/win) のインストーラ。GitHub へのブラウザ サインイン（Git Credential Manager）も一緒に入る
 2. **PowerShell に貼る**（`~` は使わない。PowerShell は git の引数の `~` を展開しない）
 
    ```powershell
    git clone https://github.com/waonme/dotfiles $HOME\dotfiles
-   git clone https://github.com/waonme/dotfiles-hosts $HOME\dotfiles-hosts   # 非公開。PC ごとの値。ブラウザで GitHub にサインインする
    ```
 
-3. **`dotfiles\setup.cmd` をダブルクリック**。最初に git の名前とメールアドレスを聞かれる（未設定のときだけ。`~/.gitconfig` に書き、リポジトリには入れない）。最後の `Next steps` に、この PC で次にやることが出る
-4. **初回バックアップ**: `%USERPROFILE%\.wslconfig` の memory / swap / processors をこの PC に合わせて直し、**`dotfiles\backup-hosts.cmd` をダブルクリック**。差分を見て `y` を押すと `dotfiles-hosts/<COMPUTERNAME>/` に保存され、毎日 12:00 の自動バックアップも用意される
+3. **`dotfiles\setup.cmd` をダブルクリック**。この PC の状態と番号メニューが出る。「次のおすすめ」が 1 になっているので Enter
+   - 1（初回セットアップ）は、git の名前とメールアドレスを確かめ（未設定なら聞く。`~/.gitconfig` に書き、リポジトリには入れない）、非公開の dotfiles-hosts を `$HOME\dotfiles-hosts` に clone し（ブラウザで GitHub にサインイン）、`setup.ps1` を流す
+   - 続けて `.wslconfig` がメモ帳で開くので、memory / swap / processors をこの PC に合わせて直して閉じる。差分を見て `y` を押すと `dotfiles-hosts/<COMPUTERNAME>/` に保存され、毎日 12:00 の自動バックアップも用意される
+4. 最後の状態一覧で、`.wslconfig` が「保存済み」、毎日のバックアップが「登録済み」なら完了。Windows を 1 回再起動する
 
-- 初回だけは必ず手で（4）。自動バックアップは、この PC のファイルがまだ dotfiles-hosts に無いときは吸い上げない（直す前の型を push しないため）
-- dotfiles-hosts を 3 の後に clone しても、4 が成功すればタスクは登録される。順番を間違えても壊れない
-- 窓がすぐ閉じる・何も起きないときは、PowerShell で `pwsh -ExecutionPolicy Bypass -File $HOME\dotfiles\setup.ps1 -KeepOpen`（pwsh が無ければ `powershell`）
-- CapsLock → Ctrl など管理者権限の要る設定も入れるときだけ、`setup.cmd` を右クリック →「管理者として実行」
+### メニュー（`setup.cmd`）
+
+```
+  1) 初回セットアップ（clone → setup → 値を直す → バックアップ）
+  2) 最新にして設定を適用し直す      ← dotfiles を更新したとき、別の PC で値を直したとき
+  3) 今すぐバックアップ              ← この PC で値を直したとき（backup-hosts.cmd と同じ）
+  4) ログのフォルダを開く
+  5) CapsLock → Ctrl（管理者）       ← この段だけ UAC で昇格する
+  0) 終わる
+```
+
+- 上に出る状態一覧で、dotfiles / dotfiles-hosts の未コミット・未 push、git の名前、PC ごとのファイルが保存済みか、毎日のバックアップの登録と前回の結果がわかる。状態から「次のおすすめ」を選び、Enter だけで進む
+- 各操作の前に「これから行うこと」を出し、Enter で実行、`n` で戻る
+- 自動バックアップが失敗すると、PowerShell を開いたときに 1 行で知らせる（dotfiles のプロファイルを使っているとき）。メニューの状態一覧にも理由が出る
+- 初回だけは必ず手で（1 か 3）。自動バックアップは、この PC のファイルがまだ dotfiles-hosts に無いときは吸い上げない（直す前の型を push しないため）
+- 窓がすぐ閉じる・何も起きないときは、PowerShell で `pwsh -ExecutionPolicy Bypass -File $HOME\dotfiles\setup.ps1 -KeepOpen`（pwsh が無ければ `powershell`）。状態だけ見るなら `... -File $HOME\dotfiles\menu.ps1 -Status`
 
 `setup.ps1` が以下を自動で行う：
 0. git の user.name / user.email が未設定ならその場で聞いて `~/.gitconfig` に書く（リポジトリには入れない）

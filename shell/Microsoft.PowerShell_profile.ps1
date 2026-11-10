@@ -1,5 +1,6 @@
-# managed by dotfiles: ~/dotfiles/shell/Microsoft.PowerShell_profile.ps1 (edit there, then re-run setup.ps1)
+﻿# managed by dotfiles: ~/dotfiles/shell/Microsoft.PowerShell_profile.ps1 (edit there, then re-run setup.ps1)
 # Microsoft.PowerShell_profile.ps1 — dotfiles 管理下の PowerShell プロファイル
+# 文言に日本語があるので BOM 付き UTF-8 で保存する（Windows PowerShell 5.1 が CP932 と誤読しないように）
 # setup.ps1 が Documents\PowerShell と Documents\WindowsPowerShell の両方にコピーする
 # PowerShell 7 (pwsh) 向け。Windows PowerShell 5.1 でも壊れないように、無い機能は飛ばす
 
@@ -89,4 +90,9 @@ if (Get-Command zoxide -ErrorAction SilentlyContinue) {
 }
 if (Get-Command starship -ErrorAction SilentlyContinue) {
     Invoke-Expression (& starship init powershell)
+}
+
+# --- dotfiles: 自動バックアップの失敗を知らせる（ファイルの有無を見るだけなので起動は遅くならない） ---
+if ($env:LOCALAPPDATA -and (Test-Path (Join-Path $env:LOCALAPPDATA "dotfiles\backup-failed.txt"))) {
+    Write-Host "[dotfiles] PC ごとの設定の自動バックアップが失敗しています。dotfiles\setup.cmd を開くと理由が出ます" -ForegroundColor Yellow
 }
