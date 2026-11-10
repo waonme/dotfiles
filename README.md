@@ -24,6 +24,9 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 - `windows/tweaks.reg` — ダークモード、スクロールバー常時表示、通知・おすすめ抑制、カーソル太さ
 - `shell/Microsoft.PowerShell_profile.ps1` — PowerShell の入力体験最適化（PSReadLine/補完/ショートカット）
 
+### キー操作
+- `keyboard/mac-keys.ahk` — Mac 風のキー操作（[AutoHotkey v2](https://www.autohotkey.com/)）。Alt を ⌘ として扱い、⌘C/V/Z/S/T/W…→Ctrl、⌘Q で閉じる、⌘←→ で行頭・行末、⌘⇧4 で範囲スクショ、エクスプローラーでは ⌘↑ で親フォルダ・⌘⌫ でごみ箱。Alt+Tab・Alt+F4・Alt+Space（PowerToys Run）・IME 切替はそのまま
+
 ### Windows Terminal
 - `windows-terminal/color-schemes.json` — カスタム配色 (Midnight Mint, Slate Mist, Warm Earth)
 - `windows-terminal/defaults.json` — デフォルトプロファイル、キーバインド（ペイン操作含む）、グローバル設定
@@ -57,8 +60,9 @@ pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 3. PowerShell プロファイルの反映
 4. AI 指示書 `ai/AGENTS.md` を `~/.claude/CLAUDE.md` と `~/.codex/AGENTS.md` にコピー
 5. Git の include.path 設定 + `autocrlf = true`
-6. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI)
-7. `.wslconfig` のコピー
+6. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI, AutoHotkey v2)
+7. `keyboard/mac-keys.ahk` をスタートアップに登録して起動
+8. `.wslconfig` のコピー
 
 ## クイックスタート (Linux: Fedora / Ubuntu / Debian / WSL)
 
@@ -139,6 +143,13 @@ ln -sf ~/dotfiles/shell/.zshrc ~/.zshrc
 Copy-Item ~/dotfiles/shell/Microsoft.PowerShell_profile.ps1 "$env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1" -Force
 Copy-Item ~/dotfiles/shell/Microsoft.PowerShell_profile.ps1 "$env:USERPROFILE\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1" -Force
 ```
+
+### Mac 風キー操作の調整
+
+- 効かせたくないアプリ（Alt を使うゲーム、リモート接続など）は `keyboard/mac-keys.ahk` 冒頭の `GroupAdd "MacOff", ...` に実行ファイル名を足す
+- 編集後はタスクトレイの H アイコン →「Reload Script」、または `setup.ps1` を再実行
+- 管理者権限のウィンドウ（タスクマネージャー等）では効かない。効かせたいときはスクリプトを管理者として実行する
+- 止めるときはトレイアイコン →「Exit」。自動起動をやめるなら `shell:startup` の `mac-keys.lnk` を消す
 
 ### PowerToys 設定のコピー
 

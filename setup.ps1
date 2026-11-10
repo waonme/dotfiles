@@ -268,6 +268,7 @@ $wingetApps = @(
     @{ Id = "Anthropic.Claude"; Source = "winget"; Name = "Claude" }
     @{ Id = "Anthropic.ClaudeCode"; Source = "winget"; Name = "Claude Code" }
     @{ Id = "OpenAI.Codex";     Source = "winget"; Name = "Codex CLI" }
+    @{ Id = "AutoHotkey.AutoHotkey"; Source = "winget"; Name = "AutoHotkey v2" }
 )
 foreach ($app in $wingetApps) {
     $installed = winget list --id $app.Id --accept-source-agreements 2>$null | Out-String
@@ -277,6 +278,32 @@ foreach ($app in $wingetApps) {
         Write-Host "  Installing $($app.Name) ..." -ForegroundColor Gray
         winget install --id $app.Id --source $app.Source --accept-package-agreements --accept-source-agreements --silent
     }
+}
+
+# 6b. Mac 風キー操作（keyboard/mac-keys.ahk。Alt を ⌘ として扱う）
+#     スタートアップにショートカットを置き、ログイン時に起動させる。参照先は dotfiles 内の本体なので git pull で更新が届く
+Write-Host ""
+Write-Host "Setting up Mac-like keys (AutoHotkey)..." -ForegroundColor Yellow
+$macKeys = Join-Path $PSScriptRoot "keyboard\mac-keys.ahk"
+if (Test-Path $macKeys) {
+    $startupDir = [Environment]::GetFolderPath('Startup')
+    $macKeysLnk = Join-Path $startupDir "mac-keys.lnk"
+    try {
+        $wsh = New-Object -ComObject WScript.Shell
+        $lnk = $wsh.CreateShortcut($macKeysLnk)
+        $lnk.TargetPath = $macKeys
+        $lnk.WorkingDirectory = Split-Path $macKeys -Parent
+        $lnk.Save()
+        Write-Host "  Startup shortcut: $macKeysLnk" -ForegroundColor Gray
+        # 今すぐ起動（#SingleInstance Force なので、動いていれば新しい中身に置き換わる）
+        Start-Process $macKeys
+        Write-Host "  Started mac-keys.ahk" -ForegroundColor Gray
+    } catch {
+        Write-Host "  [WARN] Failed to set up mac-keys.ahk: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "         Make sure AutoHotkey v2 is installed, then re-run." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "  keyboard\mac-keys.ahk not found, skipping." -ForegroundColor Red
 }
 
 # 7. Copy .wslconfig
