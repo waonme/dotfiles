@@ -281,12 +281,13 @@ $wingetApps = @(
     @{ Id = "AutoHotkey.AutoHotkey"; Source = "winget"; Name = "AutoHotkey v2" }
 )
 foreach ($app in $wingetApps) {
-    $installed = winget list --id $app.Id --accept-source-agreements 2>$null | Out-String
+    # --exact が無いと ID の部分一致になり、Anthropic.ClaudeCode があるだけで Anthropic.Claude も入っていると誤判定する
+    $installed = winget list --id $app.Id --exact --accept-source-agreements 2>$null | Out-String
     if ($installed -match [regex]::Escape($app.Id)) {
         Write-Host "  $($app.Name) is already installed." -ForegroundColor Gray
     } else {
         Write-Host "  Installing $($app.Name) ..." -ForegroundColor Gray
-        winget install --id $app.Id --source $app.Source --accept-package-agreements --accept-source-agreements --silent
+        winget install --id $app.Id --exact --source $app.Source --accept-package-agreements --accept-source-agreements --silent
     }
 }
 
