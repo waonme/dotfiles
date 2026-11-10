@@ -151,6 +151,11 @@ function Add-ScoopBucketIfMissing {
     }
 }
 
+# 0. コミットに使う git の名前とメールアドレス（~/.gitconfig）。長いインストールの途中で入力待ちにならないよう最初に聞く
+Write-Host ""
+Write-Host "Checking git identity..." -ForegroundColor Yellow
+[void](Confirm-GitIdentity)
+
 # 1. Install Scoop if not present
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
     Write-Host "Installing Scoop..." -ForegroundColor Yellow
@@ -266,7 +271,9 @@ if (Test-Path $aiSource) {
 Write-Host ""
 Write-Host "Setting up Git config..." -ForegroundColor Yellow
 $gitConfig = Join-Path $PSScriptRoot "git\config"
-if (Test-Path $gitConfig) {
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host "  [WARN] git is not installed; skipping. Install Git for Windows, then re-run setup." -ForegroundColor Yellow
+} elseif (Test-Path $gitConfig) {
     $gitIncludePath = "~/dotfiles/git/config"
     $currentIncludes = git config --global --get-all include.path 2>$null
     if ($currentIncludes -notcontains $gitIncludePath) {
@@ -277,22 +284,6 @@ if (Test-Path $gitConfig) {
     }
     git config --global core.autocrlf true
     Write-Host "  Set core.autocrlf = true (Windows)" -ForegroundColor Gray
-}
-
-# 5a. コミットに使う名前とメールアドレス。公開リポジトリには書かず ~/.gitconfig に置く。未設定ならその場で聞く
-foreach ($key in @("user.name", "user.email")) {
-    $current = git config --global --get $key 2>$null
-    if ([string]::IsNullOrWhiteSpace($current)) {
-        $value = Read-Host "  git $key is not set. Enter it (blank to skip)"
-        if ([string]::IsNullOrWhiteSpace($value)) {
-            Write-Host "  [WARN] git $key left unset; commits (and backup-hosts.ps1) will fail until you set it." -ForegroundColor Yellow
-        } else {
-            git config --global $key $value
-            Write-Host "  Set git $key in ~/.gitconfig" -ForegroundColor Gray
-        }
-    } else {
-        Write-Host "  git $key = $current" -ForegroundColor Gray
-    }
 }
 
 # 6. Install winget apps
@@ -308,6 +299,11 @@ $wingetApps = @(
     @{ Id = "OpenAI.Codex";     Source = "winget"; Name = "Codex CLI" }
     @{ Id = "AutoHotkey.AutoHotkey"; Source = "winget"; Name = "AutoHotkey v2" }
 )
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    # 初期設定直後は App Installer が未更新で winget が無いことがある。止まらずにこの段だけ飛ばす
+    Write-Host "  [WARN] winget is not available; skipping. Update 'App Installer' from Microsoft Store, then re-run setup." -ForegroundColor Yellow
+    $wingetApps = @()
+}
 foreach ($app in $wingetApps) {
     # --exact が無いと ID の部分一致になり、Anthropic.ClaudeCode があるだけで Anthropic.Claude も入っていると誤判定する
     $installed = winget list --id $app.Id --exact --accept-source-agreements 2>$null | Out-String
@@ -356,31 +352,23 @@ foreach ($entry in Get-HostManifest) {
     }
 }
 
-# 7b. PC ごとの設定値を毎日 dotfiles-hosts に自動バックアップ（backup-hosts.ps1 -Auto）
-#     12:00 に走り、PC が切れていたら次に起動したとき走る。ログオン中だけ（git の認証に Credential Manager を使うため）
+# 7b. PC ごとの設定値を毎日 dotfiles-hosts に自動バックアップ（backup-hosts.ps1 -Auto）。中身は lib/hosts.ps1
+#     dotfiles-hosts が後から clone された場合は、手で backup-hosts.cmd を流して成功したときに登録される
 Write-Host ""
 Write-Host "Registering the daily per-machine backup task..." -ForegroundColor Yellow
 if (Test-Path (Join-Path $HostsRoot ".git")) {
-    try {
-        $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
-        $psExe = if ($pwshCmd) { $pwshCmd.Source } else { (Get-Command powershell).Source }
-        $backupScript = Join-Path $PSScriptRoot "backup-hosts.ps1"
-        # conhost --headless: 窓を一瞬も出さずに走らせる（Windows 11）
-        $action = New-ScheduledTaskAction -Execute "conhost.exe" -Argument "--headless `"$psExe`" -NoProfile -ExecutionPolicy Bypass -File `"$backupScript`" -Auto"
-        $trigger = New-ScheduledTaskTrigger -Daily -At "12:00"
-        $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
-        $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
-        Register-ScheduledTask -TaskName "hosts-backup" -TaskPath "\dotfiles\" -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
-        Write-Host "  Registered task \dotfiles\hosts-backup (daily 12:00). Log: $BackupLog" -ForegroundColor Gray
-    } catch {
-        Write-Host "  [WARN] Could not register the backup task: $($_.Exception.Message)" -ForegroundColor Yellow
-    }
+    Register-HostsBackupTask
 } else {
-    Write-Host "  $HostsRoot is not a git clone; skipping." -ForegroundColor Gray
+    Write-Host "  [WARN] $HostsRoot is not a git clone; skipping. Clone it there, then double-click backup-hosts.cmd." -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "=== Setup complete ===" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Installed packages:"
+scoop list
+
+# 最後に、この PC で次にやること（状態を見て出す。画面の最後に来るよう scoop list の後）
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 if ($NeedExplorerRestart) {
@@ -388,17 +376,20 @@ if ($NeedExplorerRestart) {
 }
 Write-Host "  - Restart PC for CapsLock remap and context menu changes"
 Write-Host "  - Merge windows-terminal/*.json into Windows Terminal settings"
-Write-Host "  - PowerShell profile: setup.ps1 already copied it"
-Write-Host "  - zsh config: ln -sf ~/dotfiles/shell/.zshrc ~/.zshrc"
+if (-not (Test-Path (Join-Path $HostsRoot ".git"))) {
+    Write-Host "  - Clone the private per-machine repo: git clone https://github.com/waonme/dotfiles-hosts `"$HostsRoot`"" -ForegroundColor Yellow
+}
+foreach ($entry in Get-HostManifest) {
+    if (-not (Test-Path (Get-HostFilePath $entry.Name))) {
+        Write-Host "  - First backup of $($entry.Name): check $($entry.Dest), then double-click backup-hosts.cmd" -ForegroundColor Yellow
+    }
+}
 if (Test-Path $BackupFailedMarker) {
     Write-Host ""
     Write-Host "[WARN] The last automatic backup of per-machine files failed:" -ForegroundColor Red
     Write-Host ("  " + (Get-Content -Raw $BackupFailedMarker).Trim()) -ForegroundColor Red
-    Write-Host "  Fix it, then run: pwsh -File $PSScriptRoot\backup-hosts.ps1   (log: $BackupLog)" -ForegroundColor Red
+    Write-Host "  Fix it, then double-click backup-hosts.cmd   (log: $BackupLog)" -ForegroundColor Red
 }
-
-Write-Host "Installed packages:"
-scoop list
 
 if ($KeepOpen) {
     Write-Host ""

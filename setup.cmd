@@ -1,6 +1,6 @@
 @echo off
-rem dotfiles setup: double-click this file to run setup.ps1.
-rem Right-click > "Run as administrator" to also apply admin-only settings (CapsLock -> Ctrl).
+rem dotfiles setup: double-click this file to run setup.ps1 (no admin rights needed).
+rem Only if you also want admin-only settings (CapsLock -> Ctrl): right-click > "Run as administrator".
 setlocal
 set "PS=powershell"
 where pwsh >nul 2>&1 && set "PS=pwsh"

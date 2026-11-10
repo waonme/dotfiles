@@ -69,7 +69,7 @@ function Install-HostFile {
             if ($null -eq $state -or $cur -ne $state) {
                 # 配ったあとに手で直された（または控えが無く判断できない）→ 上書きしない
                 Write-Host "  [WARN] $Dest differs from $hostFile and was not written by this script; left untouched." -ForegroundColor Yellow
-                Write-Host "         Keep yours: run backup-hosts.ps1. Take the repo's: delete $Dest and re-run." -ForegroundColor Yellow
+                Write-Host "         Keep yours: double-click backup-hosts.cmd. Take the repo's: delete $Dest and re-run setup." -ForegroundColor Yellow
                 return
             }
         }
@@ -86,8 +86,63 @@ function Install-HostFile {
     if (-not (Test-Path $Dest)) {
         Copy-Item $Template $Dest
         Write-Host "  [WARN] No $hostFile; copied the template to $Dest." -ForegroundColor Yellow
-        Write-Host "         Fill in this machine's values, then run backup-hosts.ps1." -ForegroundColor Yellow
+        Write-Host "         Fill in this machine's values, then double-click backup-hosts.cmd." -ForegroundColor Yellow
     } else {
-        Write-Host "  [WARN] No $hostFile; existing $Dest left untouched. Run backup-hosts.ps1 to save it." -ForegroundColor Yellow
+        Write-Host "  [WARN] No $hostFile; existing $Dest left untouched. Double-click backup-hosts.cmd to save it." -ForegroundColor Yellow
     }
+}
+
+# --- 毎日の自動バックアップ（タスク \dotfiles\hosts-backup） -------------------------
+# setup.ps1 と、手動の backup-hosts.ps1 が成功したときの両方から呼ぶ（dotfiles-hosts をいつ clone しても登録される）
+$BackupTaskPath = "\dotfiles\"
+$BackupTaskName = "hosts-backup"
+
+function Test-HostsBackupTask {
+    if (-not (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) { return $false }
+    return [bool](Get-ScheduledTask -TaskPath $BackupTaskPath -TaskName $BackupTaskName -ErrorAction SilentlyContinue)
+}
+
+function Register-HostsBackupTask {
+    if (-not (Get-Command Register-ScheduledTask -ErrorAction SilentlyContinue)) { return }
+    try {
+        $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
+        $psExe = if ($pwshCmd) { $pwshCmd.Source } else { (Get-Command powershell).Source }
+        $backupScript = Join-Path $DotfilesRoot "backup-hosts.ps1"
+        # conhost --headless: 窓を一瞬も出さずに走らせる（Windows 11）
+        $action = New-ScheduledTaskAction -Execute "conhost.exe" -Argument "--headless `"$psExe`" -NoProfile -ExecutionPolicy Bypass -File `"$backupScript`" -Auto"
+        # 12:00 に走り、PC が切れていたら次に起動したとき走る。ログオン中だけ（git の認証に Credential Manager を使うため）
+        $trigger = New-ScheduledTaskTrigger -Daily -At "12:00"
+        $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
+        $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+        Register-ScheduledTask -TaskName $BackupTaskName -TaskPath $BackupTaskPath -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
+        Write-Host "  Registered task $BackupTaskPath$BackupTaskName (daily 12:00). Log: $BackupLog" -ForegroundColor Gray
+    } catch {
+        Write-Host "  [WARN] Could not register the backup task: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+# --- git の名前とメールアドレス ----------------------------------------------------
+# コミットに要る。公開リポジトリには書かず ~/.gitconfig に置く。未設定ならその場で聞く。全部そろえば $true
+function Confirm-GitIdentity {
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        Write-Host "  [WARN] git is not installed; cannot set user.name / user.email." -ForegroundColor Yellow
+        return $false
+    }
+    $ok = $true
+    foreach ($key in @("user.name", "user.email")) {
+        $current = git config --global --get $key 2>$null
+        if (-not [string]::IsNullOrWhiteSpace($current)) {
+            Write-Host "  git $key = $current" -ForegroundColor Gray
+            continue
+        }
+        $value = Read-Host "  git $key is not set. Enter it (blank to skip)"
+        if ([string]::IsNullOrWhiteSpace($value)) {
+            Write-Host "  [WARN] git $key left unset; commits and backups will fail until you set it." -ForegroundColor Yellow
+            $ok = $false
+        } else {
+            git config --global $key $value
+            Write-Host "  Set git $key in ~/.gitconfig" -ForegroundColor Gray
+        }
+    }
+    return $ok
 }

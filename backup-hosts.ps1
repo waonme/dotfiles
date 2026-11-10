@@ -1,9 +1,11 @@
 # backup-hosts.ps1 — この PC の設定値を dotfiles-hosts/<COMPUTERNAME>/ に吸い上げて、コミット・push する
 # 対象は lib/hosts.ps1 の Get-HostManifest に載っているファイルだけ。書くのもコミットするのも自分のフォルダだけ
+# ふだんは backup-hosts.cmd をダブルクリックする（下の 1 行目と同じ）
 # Usage:
 #   pwsh -File $HOME\dotfiles\backup-hosts.ps1          # 差分を見せて確認してからコミット・push
 #   pwsh -File $HOME\dotfiles\backup-hosts.ps1 -Yes     # 確認なし
 #   pwsh -File $HOME\dotfiles\backup-hosts.ps1 -Auto    # タスクスケジューラ用。確認なし、失敗は印を置いて setup.ps1 で知らせる
+#                                                       # この PC の初回（repo にまだファイルが無い）は吸い上げない。初回は必ず手で
 #   -NoPush を付けるとコミットまで
 
 param(
@@ -20,11 +22,18 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "lib\hosts.ps1")
 
 function Write-Log {
-    param([string]$Message, [string]$Color = "Gray")
+    param([string]$Message, [string]$Color = "Gray", [switch]$LogOnly)
     if (-not (Test-Path $DotfilesStateDir)) { New-Item -ItemType Directory -Force -Path $DotfilesStateDir | Out-Null }
     $mode = if ($Auto) { "auto" } else { "manual" }
     Add-Content -Path $BackupLog -Value ("{0} [{1}] {2}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $mode, $Message)
-    Write-Host $Message -ForegroundColor $Color
+    if (-not $LogOnly) { Write-Host $Message -ForegroundColor $Color }
+}
+
+# 終わるときは必ずここを通す。ログに end 行が無ければ、途中で強制終了された（タスクの時間切れなど）とわかる
+function Stop-Backup {
+    param([int]$Code)
+    Write-Log "end exit=$Code" -LogOnly
+    exit $Code
 }
 
 # git は進捗を stderr に出す。Windows PowerShell 5.1 ではそれが例外になるので、終了コードで判断する
@@ -60,19 +69,35 @@ function Invoke-PullRebase {
     }
 }
 
+Write-Log "start" -LogOnly
+if ($Auto) {
+    # 無人実行では資格情報の入力を待たない（待つと時間切れで何も残さず殺される）。認証切れはすぐ失敗にする
+    $env:GIT_TERMINAL_PROMPT = "0"
+    $env:GCM_INTERACTIVE = "never"
+}
+
 try {
     if ([string]::IsNullOrWhiteSpace($HostName)) { throw "COMPUTERNAME is empty; refusing to guess the host folder." }
-    if (-not (Test-Path (Join-Path $HostsRoot ".git"))) { throw "$HostsRoot is not a git clone of dotfiles-hosts." }
+    if (-not (Test-Path (Join-Path $HostsRoot ".git"))) {
+        throw "$HostsRoot is not a git clone of dotfiles-hosts. Clone it there: git clone https://github.com/waonme/dotfiles-hosts `"$HostsRoot`""
+    }
 
     # 自分のフォルダ以外に未コミットの変更があれば止める（ほかの PC の値を巻き込まない）
     $hostPrefix = "$HostName/"
     $dirty = @(Invoke-Git @('status', '--porcelain', '--untracked-files=all') | Where-Object { $_ -and -not $_.Substring(3).Trim('"').StartsWith($hostPrefix) })
     if ($dirty.Count -gt 0) { throw "Uncommitted changes outside $hostPrefix in ${HostsRoot}: $($dirty -join ', ')" }
 
-    # コミットに要る名前とメールアドレス。無ければ何も触らずに止める
-    $ident = @(try { Invoke-Git @('config', 'user.email') } catch { })
-    if ($ident.Count -eq 0 -or [string]::IsNullOrWhiteSpace($ident[0])) {
-        throw "git user.name / user.email are not set. Run: git config --global user.name ""..."" ; git config --global user.email ""..."""
+    # コミットに要る名前とメールアドレス。手動ならその場で聞く。-Auto なら何も触らずに止める
+    $hasIdentity = {
+        foreach ($key in @('user.name', 'user.email')) {
+            $v = @(try { Invoke-Git @('config', $key) } catch { })
+            if ($v.Count -eq 0 -or [string]::IsNullOrWhiteSpace($v[0])) { return $false }
+        }
+        return $true
+    }
+    if (-not (& $hasIdentity)) {
+        if (-not $Auto) { [void](Confirm-GitIdentity) }
+        if (-not (& $hasIdentity)) { throw "git user.name / user.email are not set. Double-click backup-hosts.cmd (or run setup) to set them." }
     }
 
     $hasRemote = [bool](Invoke-Git @('remote'))
@@ -95,6 +120,12 @@ try {
             continue
         }
         $cur = Read-Normalized $entry.Dest
+        if (-not (Test-Path $hostFile) -and $Auto) {
+            # この PC の初回。型のまま（値を直す前）かもしれないので、無人では吸い上げない
+            $problems += "${name}: first backup of this PC must be done by hand: fill in $($entry.Dest), then double-click backup-hosts.cmd"
+            Write-Log "  [WARN] ${name}: no copy in the repo yet; the first backup must be done by hand." "Yellow"
+            continue
+        }
         if (Test-Path $hostFile) {
             $src = Read-Normalized $hostFile
             if ($cur -eq $src) {
@@ -110,7 +141,7 @@ try {
             $why = if ($null -eq $state) { "no record of what was last deployed here" } elseif ($src -ne $state) { "changed both on this machine and in the repo" } else { $null }
             if ($why) {
                 if ($Auto) {
-                    $problems += "${name}: $why; run backup-hosts.ps1 (keep this machine's) or delete $($entry.Dest) and run setup.ps1 (keep the repo's)"
+                    $problems += "${name}: $why; double-click backup-hosts.cmd (keep this machine's) or delete $($entry.Dest) and run setup (keep the repo's)"
                     Write-Log "  [WARN] ${name}: $why; left for a manual run." "Yellow"
                     continue
                 }
@@ -139,7 +170,7 @@ try {
             if ($answer -notmatch '^[yY]') {
                 Undo-Capture
                 Write-Host "Cancelled; nothing committed." -ForegroundColor Yellow
-                exit 0
+                Stop-Backup 0
             }
         }
 
@@ -188,11 +219,14 @@ try {
 
     if ($problems.Count -gt 0) { throw ($problems -join " | ") }
     if (Test-Path $BackupFailedMarker) { Remove-Item $BackupFailedMarker -Force }
-    exit 0
+
+    # 手で流して成功したら、毎日の自動バックアップも用意する（dotfiles-hosts を setup の後に clone した PC 向け）
+    if (-not $Auto -and -not (Test-HostsBackupTask)) { Register-HostsBackupTask }
+    Stop-Backup 0
 } catch {
     Write-Log "[ERROR] $($_.Exception.Message)" "Red"
     if ($Auto) {
         Set-Content -Path $BackupFailedMarker -Value ("{0} {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $_.Exception.Message)
     }
-    exit 1
+    Stop-Backup 1
 }

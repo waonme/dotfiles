@@ -1,6 +1,6 @@
 # ~/.wslconfig の型（WSL2 の仮想マシン設定）
-# PC ごとの値は hosts/<COMPUTERNAME>/.wslconfig に置く。setup.ps1 はそちらを配り、
-# まだ無い PC にだけこの型を配る（そのあと hosts/<COMPUTERNAME>/ に移してコミットする）
+# PC ごとの値は非公開の dotfiles-hosts/<COMPUTERNAME>/.wslconfig に置く。setup.ps1 はそちらを配り、
+# まだ無い PC にだけこの型を配る（値を直したら backup-hosts.cmd をダブルクリックして保存する）
 # 変更後: wsl --shutdown で反映
 
 [wsl2]
