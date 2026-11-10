@@ -65,7 +65,7 @@ pwsh -ExecutionPolicy Bypass -File $HOME\dotfiles\setup.ps1
 2. 全レジストリ設定のインポート
 3. PowerShell プロファイルの反映（自分で書いたプロファイルが既にあれば上書きせず警告だけ）
 4. AI 指示書 `ai/AGENTS.md` を `~/.claude/CLAUDE.md` と `~/.codex/AGENTS.md` にコピー
-5. Git の include.path 設定 + `autocrlf = true`
+5. Git の include.path 設定 + `autocrlf = true`。user.name / user.email が未設定ならその場で聞いて `~/.gitconfig` に書く（リポジトリには入れない）
 6. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI, AutoHotkey v2)
 7. `keyboard/mac-keys.ahk` をスタートアップに登録して起動
 8. PC ごとの設定値（`.wslconfig`）を `dotfiles-hosts/<COMPUTERNAME>/` から配る（無ければ型を配って警告。手で直したものは上書きしない）

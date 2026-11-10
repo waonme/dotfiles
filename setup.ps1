@@ -279,6 +279,22 @@ if (Test-Path $gitConfig) {
     Write-Host "  Set core.autocrlf = true (Windows)" -ForegroundColor Gray
 }
 
+# 5a. コミットに使う名前とメールアドレス。公開リポジトリには書かず ~/.gitconfig に置く。未設定ならその場で聞く
+foreach ($key in @("user.name", "user.email")) {
+    $current = git config --global --get $key 2>$null
+    if ([string]::IsNullOrWhiteSpace($current)) {
+        $value = Read-Host "  git $key is not set. Enter it (blank to skip)"
+        if ([string]::IsNullOrWhiteSpace($value)) {
+            Write-Host "  [WARN] git $key left unset; commits (and backup-hosts.ps1) will fail until you set it." -ForegroundColor Yellow
+        } else {
+            git config --global $key $value
+            Write-Host "  Set git $key in ~/.gitconfig" -ForegroundColor Gray
+        }
+    } else {
+        Write-Host "  git $key = $current" -ForegroundColor Gray
+    }
+}
+
 # 6. Install winget apps
 Write-Host ""
 Write-Host "Installing winget apps..." -ForegroundColor Yellow

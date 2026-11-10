@@ -33,6 +33,14 @@ function Get-HostFilePath {
     Join-Path (Join-Path $HostsRoot $HostName) $Name
 }
 
+# 比べるための中身。改行は LF にそろえる（Windows の git は取り出すときに CRLF にするので、中身が同じでも違って見える）
+function Read-Normalized {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $raw = Get-Content -Raw $Path
+    if ($null -eq $raw) { return "" }
+    return ($raw -replace "`r`n", "`n")
+}
+
 function Save-DeployedState {
     param([string]$From, [string]$Name)
     if (-not (Test-Path $DeployedStateDir)) { New-Item -ItemType Directory -Force -Path $DeployedStateDir | Out-Null }
@@ -49,10 +57,10 @@ function Install-HostFile {
     $stateFile = Join-Path $DeployedStateDir $Name
 
     if (Test-Path $hostFile) {
-        $src = Get-Content -Raw $hostFile
-        $state = if (Test-Path $stateFile) { Get-Content -Raw $stateFile } else { $null }
+        $src = Read-Normalized $hostFile
+        $state = if (Test-Path $stateFile) { Read-Normalized $stateFile } else { $null }
         if (Test-Path $Dest) {
-            $cur = Get-Content -Raw $Dest
+            $cur = Read-Normalized $Dest
             if ($cur -eq $src) {
                 Write-Host "  Up to date: $Dest" -ForegroundColor Gray
                 Save-DeployedState $hostFile $Name

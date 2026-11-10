@@ -69,6 +69,12 @@ try {
     $dirty = @(Invoke-Git @('status', '--porcelain', '--untracked-files=all') | Where-Object { $_ -and -not $_.Substring(3).Trim('"').StartsWith($hostPrefix) })
     if ($dirty.Count -gt 0) { throw "Uncommitted changes outside $hostPrefix in ${HostsRoot}: $($dirty -join ', ')" }
 
+    # コミットに要る名前とメールアドレス。無ければ何も触らずに止める
+    $ident = @(try { Invoke-Git @('config', 'user.email') } catch { })
+    if ($ident.Count -eq 0 -or [string]::IsNullOrWhiteSpace($ident[0])) {
+        throw "git user.name / user.email are not set. Run: git config --global user.name ""..."" ; git config --global user.email ""..."""
+    }
+
     $hasRemote = [bool](Invoke-Git @('remote'))
     if ($hasRemote) { Invoke-PullRebase }
 
@@ -88,15 +94,15 @@ try {
             Write-Log "  skip ${name}: $($entry.Dest) does not exist"
             continue
         }
-        $cur = Get-Content -Raw $entry.Dest
+        $cur = Read-Normalized $entry.Dest
         if (Test-Path $hostFile) {
-            $src = Get-Content -Raw $hostFile
+            $src = Read-Normalized $hostFile
             if ($cur -eq $src) {
                 Save-DeployedState $hostFile $name
                 continue
             }
             $stateFile = Join-Path $DeployedStateDir $name
-            $state = if (Test-Path $stateFile) { Get-Content -Raw $stateFile } else { $null }
+            $state = if (Test-Path $stateFile) { Read-Normalized $stateFile } else { $null }
             if ($null -ne $state -and $cur -eq $state) {
                 Write-Log "  ${name}: the repo has a newer version; run setup.ps1 to deploy it (not captured)." "Yellow"
                 continue
@@ -153,7 +159,12 @@ try {
 
         $names = ($captured | ForEach-Object { $_.Name }) -join ", "
         $mode = if ($Auto) { "auto" } else { "manual" }
-        Invoke-Git @('commit', '-q', '-m', "backup ${HostName}: $names ($mode)", '--', $hostPrefix) | Out-Null
+        try {
+            Invoke-Git @('commit', '-q', '-m', "backup ${HostName}: $names ($mode)", '--', $hostPrefix) | Out-Null
+        } catch {
+            Undo-Capture
+            throw
+        }
         Write-Log "Committed backup for $HostName ($names)." "Green"
     }
     # 吸い上げた中身を控えにする（次の setup.ps1 が「手で直された」と誤って警告しないように）
