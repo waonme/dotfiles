@@ -1,8 +1,8 @@
 # dotfiles setup script
 # Usage:
-#   初回: powershell -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
-#   2回目以降: pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
-#   pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1 -KeepOpen
+#   初回: powershell -ExecutionPolicy Bypass -File $HOME\dotfiles\setup.ps1
+#   2回目以降: pwsh -ExecutionPolicy Bypass -File $HOME\dotfiles\setup.ps1
+#   pwsh -ExecutionPolicy Bypass -File $HOME\dotfiles\setup.ps1 -KeepOpen
 
 param(
     [switch]$KeepOpen

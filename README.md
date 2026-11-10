@@ -48,14 +48,14 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 ## クイックスタート (Windows)
 
 ```powershell
-git clone https://github.com/waonme/dotfiles ~/dotfiles
-git clone https://github.com/waonme/dotfiles-hosts ~/dotfiles-hosts   # 非公開。PC ごとの値
+git clone https://github.com/waonme/dotfiles $HOME\dotfiles
+git clone https://github.com/waonme/dotfiles-hosts $HOME\dotfiles-hosts   # 非公開。PC ごとの値
 
 # 初回セットアップ（Windows 標準の PowerShell で実行）
-powershell -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
+powershell -ExecutionPolicy Bypass -File $HOME\dotfiles\setup.ps1
 
 # 2回目以降（pwsh が Scoop でインストール済み）
-pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
+pwsh -ExecutionPolicy Bypass -File $HOME\dotfiles\setup.ps1
 ```
 
 コマンドを打たずに、エクスプローラーで `setup.cmd` をダブルクリックしてもよい（pwsh があれば pwsh、無ければ Windows PowerShell で `setup.ps1` を流し、終わるまで窓を開けておく）。CapsLock → Ctrl など管理者権限の要る設定も入れるときは、右クリック →「管理者として実行」。
@@ -147,8 +147,8 @@ ln -sf ~/dotfiles/git/hooks/pre-commit-gitleaks <リポジトリ>/.git/hooks/pre
 PC で直した値を dotfiles-hosts に吸い上げ、コミットして push する。
 
 ```powershell
-pwsh -File ~/dotfiles/backup-hosts.ps1        # 差分を見せて、確認してからコミット・push
-pwsh -File ~/dotfiles/backup-hosts.ps1 -Yes   # 確認なし（-NoPush でコミットまで）
+pwsh -File $HOME\dotfiles\backup-hosts.ps1        # 差分を見せて、確認してからコミット・push
+pwsh -File $HOME\dotfiles\backup-hosts.ps1 -Yes   # 確認なし（-NoPush でコミットまで）
 ```
 
 - 書くのもコミットするのも `<COMPUTERNAME>/` だけ。dotfiles-hosts の中で自分のフォルダ以外に未コミットの変更があれば止める

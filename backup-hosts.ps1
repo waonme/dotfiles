@@ -1,9 +1,9 @@
 # backup-hosts.ps1 — この PC の設定値を dotfiles-hosts/<COMPUTERNAME>/ に吸い上げて、コミット・push する
 # 対象は lib/hosts.ps1 の Get-HostManifest に載っているファイルだけ。書くのもコミットするのも自分のフォルダだけ
 # Usage:
-#   pwsh -File ~/dotfiles/backup-hosts.ps1          # 差分を見せて確認してからコミット・push
-#   pwsh -File ~/dotfiles/backup-hosts.ps1 -Yes     # 確認なし
-#   pwsh -File ~/dotfiles/backup-hosts.ps1 -Auto    # タスクスケジューラ用。確認なし、失敗は印を置いて setup.ps1 で知らせる
+#   pwsh -File $HOME\dotfiles\backup-hosts.ps1          # 差分を見せて確認してからコミット・push
+#   pwsh -File $HOME\dotfiles\backup-hosts.ps1 -Yes     # 確認なし
+#   pwsh -File $HOME\dotfiles\backup-hosts.ps1 -Auto    # タスクスケジューラ用。確認なし、失敗は印を置いて setup.ps1 で知らせる
 #   -NoPush を付けるとコミットまで
 
 param(
