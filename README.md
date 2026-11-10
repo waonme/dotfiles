@@ -38,7 +38,7 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 - `wsl/.wslconfig` — WSL2 リソース制限（メモリ、swap、プロセッサ数）
 
 ### セットアップ
-- `setup.ps1` — Windows 一括セットアップスクリプト
+- `setup.ps1` — Windows 一括セットアップスクリプト（`setup.cmd` はダブルクリック用の入口）
 - `setup.sh` — Linux (Fedora / Ubuntu / Debian、WSL 含む) 一括セットアップスクリプト
 - `setup-macos.sh` — macOS 一括セットアップスクリプト
 
@@ -53,6 +53,8 @@ powershell -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 # 2回目以降（pwsh が Scoop でインストール済み）
 pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 ```
+
+コマンドを打たずに、エクスプローラーで `setup.cmd` をダブルクリックしてもよい（pwsh があれば pwsh、無ければ Windows PowerShell で `setup.ps1` を流し、終わるまで窓を開けておく）。CapsLock → Ctrl など管理者権限の要る設定も入れるときは、右クリック →「管理者として実行」。
 
 `setup.ps1` が以下を自動で行う：
 1. Scoop インストール & パッケージインポート
