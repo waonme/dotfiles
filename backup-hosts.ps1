@@ -48,6 +48,16 @@ function Undo-Capture {
     if ($tracked.Count -gt 0) { Invoke-Git @('checkout', '-q', '--', "$HostName/") | Out-Null }
 }
 
+# 取り込みに失敗したら途中のまま残さない（残すと以後の自動実行が全部失敗する）
+function Invoke-PullRebase {
+    try {
+        Invoke-Git @('pull', '--rebase', '--autostash', '--quiet') | Out-Null
+    } catch {
+        try { Invoke-Git @('rebase', '--abort') | Out-Null } catch { }
+        throw
+    }
+}
+
 try {
     if ([string]::IsNullOrWhiteSpace($HostName)) { throw "COMPUTERNAME is empty; refusing to guess the host folder." }
     if (-not (Test-Path (Join-Path $HostsRoot ".git"))) { throw "$HostsRoot is not a git clone of dotfiles-hosts." }
@@ -58,19 +68,49 @@ try {
     if ($dirty.Count -gt 0) { throw "Uncommitted changes outside $hostPrefix in ${HostsRoot}: $($dirty -join ', ')" }
 
     $hasRemote = [bool](Invoke-Git @('remote'))
-    if ($hasRemote) { Invoke-Git @('pull', '--rebase', '--autostash', '--quiet') | Out-Null }
+    if ($hasRemote) { Invoke-PullRebase }
 
     $hostDir = Join-Path $HostsRoot $HostName
     if (-not (Test-Path $hostDir)) { New-Item -ItemType Directory -Force -Path $hostDir | Out-Null }
 
+    # 配り先（この PC）・リポジトリ・控え（前回配った／吸い上げた中身）の三つを比べて決める
+    #   配り先 = 控え、リポジトリ != 控え → リポジトリ側が新しい。吸い上げない（setup.ps1 で配る）
+    #   配り先 != 控え、リポジトリ = 控え → この PC で直された。吸い上げる
+    #   両方とも控えと違う／控えが無い   → どちらを残すか人が決める。-Auto では触らず失敗として知らせる
     $captured = @()
+    $problems = @()
     foreach ($entry in Get-HostManifest) {
-        if (Test-Path $entry.Dest) {
-            Copy-Item $entry.Dest (Get-HostFilePath $entry.Name) -Force
-            $captured += $entry
-        } else {
-            Write-Log "  skip $($entry.Name): $($entry.Dest) does not exist"
+        $name = $entry.Name
+        $hostFile = Get-HostFilePath $name
+        if (-not (Test-Path $entry.Dest)) {
+            Write-Log "  skip ${name}: $($entry.Dest) does not exist"
+            continue
         }
+        $cur = Get-Content -Raw $entry.Dest
+        if (Test-Path $hostFile) {
+            $src = Get-Content -Raw $hostFile
+            if ($cur -eq $src) {
+                Save-DeployedState $hostFile $name
+                continue
+            }
+            $stateFile = Join-Path $DeployedStateDir $name
+            $state = if (Test-Path $stateFile) { Get-Content -Raw $stateFile } else { $null }
+            if ($null -ne $state -and $cur -eq $state) {
+                Write-Log "  ${name}: the repo has a newer version; run setup.ps1 to deploy it (not captured)." "Yellow"
+                continue
+            }
+            $why = if ($null -eq $state) { "no record of what was last deployed here" } elseif ($src -ne $state) { "changed both on this machine and in the repo" } else { $null }
+            if ($why) {
+                if ($Auto) {
+                    $problems += "${name}: $why; run backup-hosts.ps1 (keep this machine's) or delete $($entry.Dest) and run setup.ps1 (keep the repo's)"
+                    Write-Log "  [WARN] ${name}: $why; left for a manual run." "Yellow"
+                    continue
+                }
+                Write-Host "  [WARN] ${name}: $why. Capturing replaces the repo's version (see the diff below)." -ForegroundColor Yellow
+            }
+        }
+        Copy-Item $entry.Dest $hostFile -Force
+        $captured += $entry
     }
 
     Invoke-Git @('add', '--', $hostPrefix) | Out-Null
@@ -80,7 +120,7 @@ try {
     $ErrorActionPreference = $prev
 
     if (-not $changed) {
-        Write-Log "No changes for $HostName."
+        Write-Log "No changes to capture for $HostName."
     } else {
         Write-Host ""
         Invoke-Git @('diff', '--cached', '--stat', '--', $hostPrefix) | Write-Host
@@ -96,7 +136,10 @@ try {
         }
 
         # 秘密の値が混じっていないか（値は表示しない）。gitleaks が無ければコミットしない
-        if (-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) { throw "gitleaks not found; refusing to commit (scoop install gitleaks)." }
+        if (-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
+            Undo-Capture
+            throw "gitleaks not found; refusing to commit (scoop install gitleaks)."
+        }
         $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
         & gitleaks git --pre-commit --staged --redact --no-banner $HostsRoot 2>&1 | ForEach-Object { "$_" } | Write-Host
         $leakCode = $LASTEXITCODE
@@ -110,21 +153,26 @@ try {
         $mode = if ($Auto) { "auto" } else { "manual" }
         Invoke-Git @('commit', '-q', '-m', "backup ${HostName}: $names ($mode)", '--', $hostPrefix) | Out-Null
         Write-Log "Committed backup for $HostName ($names)." "Green"
+    }
+    # 吸い上げた中身を控えにする（次の setup.ps1 が「手で直された」と誤って警告しないように）
+    foreach ($entry in $captured) { Save-DeployedState (Get-HostFilePath $entry.Name) $entry.Name }
 
-        if ($hasRemote -and -not $NoPush) {
+    # 前回 push できなかったコミットも含めて、未 push があれば push する
+    if ($hasRemote -and -not $NoPush) {
+        $ahead = try { [int](Invoke-Git @('rev-list', '--count', '@{u}..HEAD') | Select-Object -First 1) } catch { 1 }
+        if ($ahead -gt 0) {
             try {
                 Invoke-Git @('push', '-q') | Out-Null
             } catch {
                 # ほかの PC が先に push していた → 取り込んでからもう一度だけ
-                Invoke-Git @('pull', '--rebase', '--quiet') | Out-Null
+                Invoke-PullRebase
                 Invoke-Git @('push', '-q') | Out-Null
             }
             Write-Log "Pushed." "Green"
         }
     }
 
-    # 吸い上げた中身を控えにする（次の setup.ps1 が「手で直された」と誤って警告しないように）
-    foreach ($entry in $captured) { Save-DeployedState (Get-HostFilePath $entry.Name) $entry.Name }
+    if ($problems.Count -gt 0) { throw ($problems -join " | ") }
     if (Test-Path $BackupFailedMarker) { Remove-Item $BackupFailedMarker -Force }
     exit 0
 } catch {
