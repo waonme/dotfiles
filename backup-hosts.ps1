@@ -157,7 +157,8 @@ try {
             throw "gitleaks found something that looks like a secret; nothing committed."
         }
 
-        $names = ($captured | ForEach-Object { $_.Name }) -join ", "
+        # 実際にコミットされるファイル名（前回の失敗でステージに残っていた分も含む）
+        $names = (@(Invoke-Git @('diff', '--cached', '--name-only', '--', $hostPrefix)) | ForEach-Object { $_.Substring($hostPrefix.Length) }) -join ", "
         $mode = if ($Auto) { "auto" } else { "manual" }
         try {
             Invoke-Git @('commit', '-q', '-m', "backup ${HostName}: $names ($mode)", '--', $hostPrefix) | Out-Null
