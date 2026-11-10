@@ -1,3 +1,4 @@
+# managed by dotfiles: ~/dotfiles/shell/Microsoft.PowerShell_profile.ps1 (edit there, then re-run setup.ps1)
 # Microsoft.PowerShell_profile.ps1 — dotfiles 管理下の PowerShell プロファイル
 # setup.ps1 が Documents\PowerShell と Documents\WindowsPowerShell の両方にコピーする
 # PowerShell 7 (pwsh) 向け。Windows PowerShell 5.1 でも壊れないように、無い機能は飛ばす

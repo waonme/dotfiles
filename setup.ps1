@@ -196,6 +196,7 @@ foreach ($reg in $regFiles) {
 Write-Host ""
 Write-Host "Setting up PowerShell profile..." -ForegroundColor Yellow
 $shellProfile = Join-Path $PSScriptRoot "shell\Microsoft.PowerShell_profile.ps1"
+$managedMarker = "managed by dotfiles"   # dotfiles から配るファイルの先頭に入れる目印。これが無い中身のあるファイルは自分で書いたもの
 if (Test-Path $shellProfile) {
 $documentsRoot = [Environment]::GetFolderPath('MyDocuments')
 $powershellProfilePath = Join-Path -Path $documentsRoot -ChildPath "PowerShell"
@@ -208,8 +209,17 @@ $profileRoots = @(
         if (-not (Test-Path $root)) {
             New-Item -ItemType Directory -Force -Path $root | Out-Null
         }
-        Copy-Item $shellProfile (Join-Path $root "Microsoft.PowerShell_profile.ps1") -Force
-        Write-Host "  Updated profile: $root\\Microsoft.PowerShell_profile.ps1" -ForegroundColor Gray
+        $profileDest = Join-Path $root "Microsoft.PowerShell_profile.ps1"
+        if (Test-Path $profileDest) {
+            $existing = Get-Content -Raw $profileDest -ErrorAction SilentlyContinue
+            if (-not [string]::IsNullOrWhiteSpace($existing) -and $existing -notmatch [regex]::Escape($managedMarker)) {
+                # 自分で書いたプロファイル → 上書きしない
+                Write-Host "  [WARN] $profileDest has its own content; left untouched. Merge it into shell\Microsoft.PowerShell_profile.ps1, delete it, then re-run." -ForegroundColor Yellow
+                continue
+            }
+        }
+        Copy-Item $shellProfile $profileDest -Force
+        Write-Host "  Updated profile: $profileDest" -ForegroundColor Gray
     }
 } else {
     Write-Host "  PowerShell profile not found, skipping." -ForegroundColor Red
@@ -220,7 +230,6 @@ $profileRoots = @(
 Write-Host ""
 Write-Host "Setting up AI agent instructions..." -ForegroundColor Yellow
 $aiSource = Join-Path $PSScriptRoot "ai\AGENTS.md"
-$aiMarker = "managed by dotfiles"   # ai/AGENTS.md の 1 行目。これが無い中身のあるファイルは自分で書いたもの
 if (Test-Path $aiSource) {
     $aiDests = @(
         (Join-Path $env:USERPROFILE ".claude\CLAUDE.md")
@@ -233,7 +242,7 @@ if (Test-Path $aiSource) {
         }
         if (Test-Path $dest) {
             $existing = Get-Content -Raw $dest -ErrorAction SilentlyContinue
-            if (-not [string]::IsNullOrWhiteSpace($existing) -and $existing -notmatch [regex]::Escape($aiMarker)) {
+            if (-not [string]::IsNullOrWhiteSpace($existing) -and $existing -notmatch [regex]::Escape($managedMarker)) {
                 # 自分で書いた中身がある → 上書きしない。統合は手で決める
                 Write-Host "  [WARN] $dest has its own content; left untouched. Merge it into ai\AGENTS.md, delete it, then re-run." -ForegroundColor Yellow
                 continue
@@ -322,9 +331,18 @@ Write-Host ""
 Write-Host "Setting up WSL config..." -ForegroundColor Yellow
 $wslConfig = Join-Path $PSScriptRoot "wsl\.wslconfig"
 $wslDest = Join-Path $env:USERPROFILE ".wslconfig"
+# 値（memory / processors 等）はマシンごとに違うので、既にあれば上書きしない
 if (Test-Path $wslConfig) {
-    Copy-Item $wslConfig $wslDest -Force
-    Write-Host "  Copied .wslconfig to $wslDest" -ForegroundColor Gray
+    if (-not (Test-Path $wslDest)) {
+        Copy-Item $wslConfig $wslDest
+        Write-Host "  Copied .wslconfig to $wslDest (adjust memory / processors for this machine)" -ForegroundColor Gray
+    } elseif ((Get-Content -Raw $wslDest) -eq (Get-Content -Raw $wslConfig)) {
+        Write-Host "  Up to date: $wslDest" -ForegroundColor Gray
+    } else {
+        Write-Host "  [WARN] $wslDest already exists and differs from wsl\.wslconfig; left untouched. Compare them by hand." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "  wsl\.wslconfig not found, skipping." -ForegroundColor Red
 }
 
 Write-Host ""

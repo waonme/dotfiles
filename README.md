@@ -60,12 +60,12 @@ pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 `setup.ps1` が以下を自動で行う：
 1. Scoop インストール & パッケージインポート
 2. 全レジストリ設定のインポート
-3. PowerShell プロファイルの反映
+3. PowerShell プロファイルの反映（自分で書いたプロファイルが既にあれば上書きせず警告だけ）
 4. AI 指示書 `ai/AGENTS.md` を `~/.claude/CLAUDE.md` と `~/.codex/AGENTS.md` にコピー
 5. Git の include.path 設定 + `autocrlf = true`
 6. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI, AutoHotkey v2)
 7. `keyboard/mac-keys.ahk` をスタートアップに登録して起動
-8. `.wslconfig` のコピー
+8. `.wslconfig` のコピー（既にあれば上書きせず、中身が違えば警告だけ。値はマシンごとなので手で合わせる）
 
 ## クイックスタート (Linux: Fedora / Ubuntu / Debian / WSL)
 
