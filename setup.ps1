@@ -151,8 +151,18 @@ function Add-ScoopBucketIfMissing {
 # 1. Install Scoop if not present
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
     Write-Host "Installing Scoop..." -ForegroundColor Yellow
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-    Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+    try {
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+    } catch {
+        # -ExecutionPolicy Bypass で起動していると「Process スコープの設定に上書きされる」と返るが、
+        # CurrentUser への設定自体は済んでいる。$ErrorActionPreference = Stop で止まらないよう握りつぶす
+    }
+    if (Test-IsAdmin) {
+        # Scoop の導入スクリプトは既定で管理者実行を断るので、明示して通す
+        Invoke-Expression "& {$(Invoke-RestMethod -Uri https://get.scoop.sh)} -RunAsAdmin"
+    } else {
+        Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+    }
 } else {
     Write-Host "Scoop is already installed." -ForegroundColor Green
 }
