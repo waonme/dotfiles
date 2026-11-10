@@ -42,6 +42,8 @@ Windows / Linux (Fedora, Ubuntu/Debian, WSL) / macOS 開発環境のセットア
 - `setup.ps1` — Windows 一括セットアップスクリプト（`setup.cmd` はダブルクリック用の入口）
 - `setup.sh` — Linux (Fedora / Ubuntu / Debian、WSL 含む) 一括セットアップスクリプト
 - `setup-macos.sh` — macOS 一括セットアップスクリプト
+- `backup-hosts.ps1` — この PC の設定値を非公開の dotfiles-hosts に吸い上げてコミット・push する（[マシンごとの設定](#マシンごとの設定)）
+- `lib/hosts.ps1` — PC ごとに管理するファイルの一覧と、配る・吸い上げる処理の共通部分
 
 ## クイックスタート (Windows)
 
@@ -66,13 +68,13 @@ pwsh -ExecutionPolicy Bypass -File ~/dotfiles/setup.ps1
 5. Git の include.path 設定 + `autocrlf = true`
 6. winget アプリインストール (Dropbox, RustDesk, Eagle, Notion, Claude, Claude Code, Codex CLI, AutoHotkey v2)
 7. `keyboard/mac-keys.ahk` をスタートアップに登録して起動
-8. `.wslconfig` を `dotfiles-hosts/<COMPUTERNAME>/` から配る（無ければ型を配って警告。手で直した `~/.wslconfig` は上書きしない）
+8. PC ごとの設定値（`.wslconfig`）を `dotfiles-hosts/<COMPUTERNAME>/` から配る（無ければ型を配って警告。手で直したものは上書きしない）
+9. `backup-hosts.ps1 -Auto` を毎日 12:00 に走らせるタスク `\dotfiles\hosts-backup` を登録（前回の自動バックアップが失敗していたら最後に知らせる）
 
 ## クイックスタート (Linux: Fedora / Ubuntu / Debian / WSL)
 
 ```bash
 git clone https://github.com/waonme/dotfiles ~/dotfiles
-git clone https://github.com/waonme/dotfiles-hosts ~/dotfiles-hosts   # 非公開。PC ごとの値
 bash ~/dotfiles/setup.sh
 ```
 
@@ -102,7 +104,6 @@ ls -l ~/.claude/CLAUDE.md ~/.codex/AGENTS.md
 
 ```bash
 git clone https://github.com/waonme/dotfiles ~/dotfiles
-git clone https://github.com/waonme/dotfiles-hosts ~/dotfiles-hosts   # 非公開。PC ごとの値
 bash ~/dotfiles/setup-macos.sh
 ```
 
@@ -137,8 +138,24 @@ ln -sf ~/dotfiles/git/hooks/pre-commit-gitleaks <リポジトリ>/.git/hooks/pre
 
 - dotfiles と同じ階層に clone する（`~/dotfiles-hosts`）。別の場所なら環境変数 `DOTFILES_HOSTS`
 - `setup.ps1` は `<COMPUTERNAME>/` だけを読む。**別の PC のファイルは決して使わない**ので、値が混ざらない
-- この PC 用のファイルが無いときは、型（例 `wsl/.wslconfig`）を配り「`<COMPUTERNAME>/.wslconfig` を作ってコミットして」と出す。既に配り先があれば触らない
-- 値を変えるときは dotfiles-hosts 側を直してコミットし、`setup.ps1` を再実行する。前回配った中身の控え（`%LOCALAPPDATA%\dotfiles\deployed\`）と配り先が同じときだけ上書きし、配り先を手で直していたら上書きせずに警告する
+- 扱うファイルは `lib/hosts.ps1` の `Get-HostManifest` に載っているものだけ。増やすときはそこに足す
+- この PC 用のファイルが無いときは、型（例 `wsl/.wslconfig`）を配って `backup-hosts.ps1` を流すよう出す。既に配り先があれば触らない
+- 前回配った（または吸い上げた）中身の控えを `%LOCALAPPDATA%\dotfiles\deployed\` に取る。配り先が控えと同じときだけ上書きし、手で直していたら上書きせずに警告する
+
+### バックアップ（`backup-hosts.ps1`）
+
+PC で直した値を dotfiles-hosts に吸い上げ、コミットして push する。
+
+```powershell
+pwsh -File ~/dotfiles/backup-hosts.ps1        # 差分を見せて、確認してからコミット・push
+pwsh -File ~/dotfiles/backup-hosts.ps1 -Yes   # 確認なし（-NoPush でコミットまで）
+```
+
+- 書くのもコミットするのも `<COMPUTERNAME>/` だけ。dotfiles-hosts の中で自分のフォルダ以外に未コミットの変更があれば止める
+- コミットの前に gitleaks で調べ、秘密の値らしきものがあれば何もコミットせずに止める（gitleaks が無ければコミットしない）
+- 自動：`setup.ps1` がタスク `\dotfiles\hosts-backup` を登録し、毎日 12:00（PC が切れていたら次の起動後）に `-Auto` で走る。ログオン中だけ走り、窓は出さない
+- 自動で失敗したら `%LOCALAPPDATA%\dotfiles\backup-failed.txt` を置き、次に `setup.ps1` を流したときに知らせる。ログは同じ場所の `backup.log`
+- 自動で push されるのは、この PC 自身が使う値だけ。誤った値が入っても影響はその PC に限られ、git の履歴から戻せる
 
 ### `~/.zshrc.local`
 

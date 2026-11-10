@@ -16,64 +16,8 @@ function Test-IsAdmin {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-# PC ごとの設定値は非公開リポジトリ dotfiles-hosts の <COMPUTERNAME>/ に置く（公開の dotfiles には型だけ）
-# 既定は dotfiles と同じ階層の dotfiles-hosts。別の場所なら環境変数 DOTFILES_HOSTS
-$HostsRoot = if ($env:DOTFILES_HOSTS) { $env:DOTFILES_HOSTS } else { Join-Path (Split-Path $PSScriptRoot -Parent) "dotfiles-hosts" }
-$HostName = $env:COMPUTERNAME
-# 最後に配った中身の控え。配り先が控えと同じなら手で直されていないので、上書きしてよい
-$DeployedStateDir = Join-Path $(if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $env:HOME }) "dotfiles\deployed"
-
-function Install-HostFile {
-    param(
-        [Parameter(Mandatory = $true)][string]$Name,      # dotfiles-hosts/<COMPUTERNAME>/ の中のファイル名
-        [Parameter(Mandatory = $true)][string]$Template,  # 公開側の型。host 用ファイルがまだ無い PC にだけ配る
-        [Parameter(Mandatory = $true)][string]$Dest
-    )
-    $hostFile = Join-Path (Join-Path $HostsRoot $HostName) $Name
-    $stateFile = Join-Path $DeployedStateDir $Name
-
-    if (Test-Path $hostFile) {
-        $src = Get-Content -Raw $hostFile
-        $state = if (Test-Path $stateFile) { Get-Content -Raw $stateFile } else { $null }
-        if (Test-Path $Dest) {
-            $cur = Get-Content -Raw $Dest
-            if ($cur -eq $src) {
-                Write-Host "  Up to date: $Dest" -ForegroundColor Gray
-                Save-DeployedState $hostFile $stateFile
-                return
-            }
-            if ($null -eq $state -or $cur -ne $state) {
-                # 配ったあとに手で直された（または控えが無く判断できない）→ 上書きしない
-                Write-Host "  [WARN] $Dest differs from $hostFile and was not written by this script; left untouched." -ForegroundColor Yellow
-                Write-Host "         Keep yours: copy it over $hostFile and commit. Take the repo's: delete $Dest and re-run." -ForegroundColor Yellow
-                return
-            }
-        }
-        Copy-Item $hostFile $Dest -Force
-        Save-DeployedState $hostFile $stateFile
-        Write-Host "  Deployed $hostFile -> $Dest" -ForegroundColor Gray
-        return
-    }
-
-    # この PC の host 用ファイルが無い。別の PC のものは使わない
-    if (-not (Test-Path $HostsRoot)) {
-        Write-Host "  [WARN] $HostsRoot not found. Clone the private dotfiles-hosts repo there, or set DOTFILES_HOSTS." -ForegroundColor Yellow
-    }
-    if (-not (Test-Path $Dest)) {
-        Copy-Item $Template $Dest
-        Write-Host "  [WARN] No $hostFile; copied the template to $Dest." -ForegroundColor Yellow
-        Write-Host "         Fill in this machine's values, then copy it to $hostFile and commit." -ForegroundColor Yellow
-    } else {
-        Write-Host "  [WARN] No $hostFile; existing $Dest left untouched. Copy it to $hostFile and commit to track it." -ForegroundColor Yellow
-    }
-}
-
-function Save-DeployedState {
-    param([string]$From, [string]$StateFile)
-    $dir = Split-Path $StateFile -Parent
-    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
-    Copy-Item $From $StateFile -Force
-}
+# PC ごとの設定値（非公開リポジトリ dotfiles-hosts）を扱う関数と一覧
+. (Join-Path $PSScriptRoot "lib\hosts.ps1")
 
 Write-Host "=== dotfiles setup ===" -ForegroundColor Cyan
 
@@ -385,14 +329,38 @@ if (Test-Path $macKeys) {
     Write-Host "  keyboard\mac-keys.ahk not found, skipping." -ForegroundColor Red
 }
 
-# 7. .wslconfig（PC ごとの値。dotfiles-hosts/<COMPUTERNAME>/.wslconfig、無ければ型 wsl/.wslconfig）
+# 7. PC ごとの設定値（dotfiles-hosts/<COMPUTERNAME>/ から。一覧は lib/hosts.ps1 の Get-HostManifest）
 Write-Host ""
-Write-Host "Setting up WSL config..." -ForegroundColor Yellow
-$wslTemplate = Join-Path $PSScriptRoot "wsl\.wslconfig"
-if (Test-Path $wslTemplate) {
-    Install-HostFile -Name ".wslconfig" -Template $wslTemplate -Dest (Join-Path $env:USERPROFILE ".wslconfig")
+Write-Host "Setting up per-machine files from $HostsRoot\$HostName ..." -ForegroundColor Yellow
+foreach ($entry in Get-HostManifest) {
+    if (Test-Path $entry.Template) {
+        Install-HostFile -Name $entry.Name -Template $entry.Template -Dest $entry.Dest
+    } else {
+        Write-Host "  $($entry.Template) not found, skipping." -ForegroundColor Red
+    }
+}
+
+# 7b. PC ごとの設定値を毎日 dotfiles-hosts に自動バックアップ（backup-hosts.ps1 -Auto）
+#     12:00 に走り、PC が切れていたら次に起動したとき走る。ログオン中だけ（git の認証に Credential Manager を使うため）
+Write-Host ""
+Write-Host "Registering the daily per-machine backup task..." -ForegroundColor Yellow
+if (Test-Path (Join-Path $HostsRoot ".git")) {
+    try {
+        $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
+        $psExe = if ($pwshCmd) { $pwshCmd.Source } else { (Get-Command powershell).Source }
+        $backupScript = Join-Path $PSScriptRoot "backup-hosts.ps1"
+        # conhost --headless: 窓を一瞬も出さずに走らせる（Windows 11）
+        $action = New-ScheduledTaskAction -Execute "conhost.exe" -Argument "--headless `"$psExe`" -NoProfile -ExecutionPolicy Bypass -File `"$backupScript`" -Auto"
+        $trigger = New-ScheduledTaskTrigger -Daily -At "12:00"
+        $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
+        $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+        Register-ScheduledTask -TaskName "hosts-backup" -TaskPath "\dotfiles\" -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
+        Write-Host "  Registered task \dotfiles\hosts-backup (daily 12:00). Log: $BackupLog" -ForegroundColor Gray
+    } catch {
+        Write-Host "  [WARN] Could not register the backup task: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 } else {
-    Write-Host "  wsl\.wslconfig not found, skipping." -ForegroundColor Red
+    Write-Host "  $HostsRoot is not a git clone; skipping." -ForegroundColor Gray
 }
 
 Write-Host ""
@@ -406,6 +374,12 @@ Write-Host "  - Restart PC for CapsLock remap and context menu changes"
 Write-Host "  - Merge windows-terminal/*.json into Windows Terminal settings"
 Write-Host "  - PowerShell profile: setup.ps1 already copied it"
 Write-Host "  - zsh config: ln -sf ~/dotfiles/shell/.zshrc ~/.zshrc"
+if (Test-Path $BackupFailedMarker) {
+    Write-Host ""
+    Write-Host "[WARN] The last automatic backup of per-machine files failed:" -ForegroundColor Red
+    Write-Host ("  " + (Get-Content -Raw $BackupFailedMarker).Trim()) -ForegroundColor Red
+    Write-Host "  Fix it, then run: pwsh -File $PSScriptRoot\backup-hosts.ps1   (log: $BackupLog)" -ForegroundColor Red
+}
 
 Write-Host "Installed packages:"
 scoop list
