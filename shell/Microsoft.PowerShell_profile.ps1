@@ -58,15 +58,18 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
 }
 
 # --- エイリアス（入っているときだけ） ---
+# ls / cat の差し替えは人が使うときだけ。Claude Code の中（CLAUDECODE が立つ）や -NonInteractive では
+# 組み込みの Get-ChildItem / Get-Content のままにする（出力の形が変わるとエージェントやスクリプトが壊れる。shell/.zshrc と同じ扱い）
+$forPeople = -not $env:CLAUDECODE -and -not ([Environment]::GetCommandLineArgs() -match '^-noni')
 # PowerShell はエイリアスが関数より優先されるので、組み込みの ls / cat (Get-ChildItem / Get-Content) を先に外す
-if (Get-Command eza -ErrorAction SilentlyContinue) {
+if ($forPeople -and (Get-Command eza -ErrorAction SilentlyContinue)) {
     if (Test-Path Alias:ls) { Remove-Item Alias:ls -Force }
     function ls  { eza --icons --group-directories-first @args }
     function ll  { eza --icons --group-directories-first -la @args }
     function la  { eza -a @args }
     function lt  { eza --icons --tree --level=2 @args }
 }
-if (Get-Command bat -ErrorAction SilentlyContinue) {
+if ($forPeople -and (Get-Command bat -ErrorAction SilentlyContinue)) {
     if (Test-Path Alias:cat) { Remove-Item Alias:cat -Force }
     function cat { bat --paging=never @args }
 }

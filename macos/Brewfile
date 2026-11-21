@@ -14,6 +14,13 @@ brew "fzf"
 brew "zoxide"
 brew "git-delta"
 
+# --- AI エージェントに使わせる CLI（ai/AGENTS.md・docs/cli-tools.md。rg / fd / bat / eza / yq は別の節） ---
+brew "jq"
+brew "ast-grep"
+brew "sd"
+brew "difftastic"
+brew "hyperfine"
+
 # --- git・GitHub ---
 brew "git"
 brew "git-lfs"

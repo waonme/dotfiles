@@ -135,6 +135,7 @@ bash ~/dotfiles/setup-macos.sh
 3. `.zshrc` のシンボリックリンク作成（既存の `.zshrc` は `.zshrc.bak-<日時>` に退避）
 4. `~/.zshrc.local` の雛形を作る（無いときだけ）
 5. Git の include.path 設定 + `autocrlf = input`
+6. AI 指示書 `ai/AGENTS.md` を `~/.claude/CLAUDE.md` と `~/.codex/AGENTS.md` にシンボリックリンク
 
 ## 秘密の値のコミットを止める（gitleaks）
 

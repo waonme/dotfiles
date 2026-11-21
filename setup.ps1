@@ -125,7 +125,7 @@ function Add-ScoopBucketIfMissing {
     $exists = $false
     try {
         $rawBuckets = (scoop bucket list 2>$null | Out-String)
-        $normalized = $rawBuckets -replace "\\x1B\\[[0-9;]*[ -/]*[@-~]", ""
+        $normalized = $rawBuckets -replace '\x1B\[[0-9;]*[ -/]*[@-~]', ''
         $buckets = $normalized -split "`r?`n" | ForEach-Object {
             $line = $_.Trim()
             if ($line -match '^([A-Za-z0-9\.\-_]+)\s+') { $matches[1] }

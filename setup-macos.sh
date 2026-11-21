@@ -85,6 +85,42 @@ fi
 git config --global core.autocrlf input
 gray "Set core.autocrlf = input"
 
+# --- 8. AI エージェント用の指示書 ---
+# ai/AGENTS.md が源。Claude Code (~/.claude/CLAUDE.md) と Codex CLI (~/.codex/AGENTS.md) にリンクする（setup.sh と同じ）
+step "Linking AI agent instructions (ai/AGENTS.md)..."
+AI_SRC="$DOTFILES_DIR/ai/AGENTS.md"
+AI_MARKER="managed by dotfiles"   # ai/AGENTS.md の 1 行目。これが無い中身のあるファイルは自分で書いたもの
+
+link_ai_instructions() {
+    local dest="$1"
+    mkdir -p "$(dirname "$dest")"
+    if [ -L "$dest" ]; then
+        if [ "$(readlink "$dest")" = "$AI_SRC" ]; then
+            gray "$dest is already linked."
+        else
+            warn "$dest は別の場所 ($(readlink "$dest")) を指すリンク。触らない。使うなら rm して再実行"
+        fi
+    elif [ -s "$dest" ] && ! grep -qF "$AI_MARKER" "$dest" && ! cmp -s "$dest" "$AI_SRC"; then
+        # 自分で書いた中身がある → 上書きしない。統合は手で決める
+        warn "$dest に独自の内容がある。触らない。$AI_SRC に統合してから rm $dest して再実行"
+    else
+        # 無い / 空 / 以前コピーしたもの → .bak に退避してリンク
+        if [ -e "$dest" ]; then
+            mv "$dest" "$dest.bak"
+            gray "Backed up $dest to $dest.bak"
+        fi
+        ln -s "$AI_SRC" "$dest"
+        gray "Linked $dest -> $AI_SRC"
+    fi
+}
+
+if [ -f "$AI_SRC" ]; then
+    link_ai_instructions "$HOME/.claude/CLAUDE.md"
+    link_ai_instructions "$HOME/.codex/AGENTS.md"
+else
+    warn "ai/AGENTS.md が無いので飛ばす"
+fi
+
 echo ""
 info "=== Setup complete ==="
 gray "新しいターミナルを開くと反映される。フォントは MesloLGS Nerd Font を選ぶとアイコンが出る"
